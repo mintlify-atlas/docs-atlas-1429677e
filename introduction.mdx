@@ -1,0 +1,79 @@
+---
+title: "Cabinet — AI-first Knowledge Base"
+description: "Your knowledge base. Your AI team. Everything lives as markdown files on disk — no database, no vendor lock-in, self-hosted."
+---
+
+Cabinet is a self-hosted startup OS where AI agents work alongside you. Your entire knowledge base — notes, research, decisions, plans — lives as plain markdown files on disk. AI agents with persistent memory run on schedules, write to your KB, and compound context over time.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Go from zero to a running AI team in under 2 minutes
+  </Card>
+  <Card title="AI Agents" icon="robot" href="/agents/overview">
+    Learn how agents, jobs, and memory work together
+  </Card>
+  <Card title="Core Features" icon="layer-group" href="/features/knowledge-base">
+    Explore the editor, git history, and knowledge base
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Integrate Cabinet into your own workflows
+  </Card>
+</CardGroup>
+
+## Why Cabinet?
+
+Every time you start a new AI session, it forgets everything. Your project context, your decisions, your research — gone. Cabinet solves this with a persistent, file-based knowledge base that AI agents can read and write to continuously.
+
+<CardGroup cols={2}>
+  <Card title="Files on disk" icon="folder-open">
+    All content is plain Markdown — portable, inspectable, and git-friendly
+  </Card>
+  <Card title="AI with memory" icon="brain">
+    Agents remember context across sessions and compound knowledge over time
+  </Card>
+  <Card title="No database" icon="database">
+    Zero vendor lock-in — your data is always yours and always accessible
+  </Card>
+  <Card title="Self-hosted" icon="server">
+    Run Cabinet on your own machine or server — data never leaves your environment
+  </Card>
+</CardGroup>
+
+## Get started
+
+<Steps>
+  <Step title="Create a new Cabinet project">
+    ```bash
+    npx create-cabinet@latest
+    cd cabinet
+    ```
+  </Step>
+  <Step title="Start both servers">
+    ```bash
+    npm run dev:all
+    ```
+  </Step>
+  <Step title="Open Cabinet in your browser">
+    Visit [http://localhost:3000](http://localhost:3000). The onboarding wizard will guide you through building your AI team in 5 questions.
+  </Step>
+  <Step title="Watch your team work">
+    Agents create missions, write content, and file reports — all directly to your knowledge base.
+  </Step>
+</Steps>
+
+## What's included
+
+| Feature | Description |
+|---|---|
+| **WYSIWYG + Markdown editor** | Rich text editing with Tiptap — tables, code blocks, slash commands |
+| **AI Agents** | Each has goals, skills, and scheduled jobs |
+| **Scheduled Jobs** | Cron-based automation — run agents on any schedule |
+| **Embedded HTML Apps** | Drop an `index.html` in any folder — renders as an iframe |
+| **Web Terminal** | Full local CLI terminal in the browser |
+| **Git-backed history** | Every save auto-commits with a full diff viewer |
+| **Full-text search** | Cmd+K instant search with fuzzy matching |
+| **20 agent templates** | Pre-built CEO, CMO, DevOps, and more |
+
+<Note>
+  Cabinet requires Node.js 20+ and at least one supported AI provider CLI (Claude Code or Codex).
+</Note>

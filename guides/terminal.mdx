@@ -1,0 +1,132 @@
+---
+title: "Web terminal"
+description: "A full CLI terminal in the browser — run commands, use AI providers, and manage your system"
+---
+
+Cabinet includes a full PTY terminal running in the browser, built with [xterm.js](https://xtermjs.org/) and [node-pty](https://github.com/microsoft/node-pty). It connects to the Cabinet daemon over WebSocket on port 3001, giving you a real shell session — not a simulated one.
+
+## Opening the terminal
+
+Click the **Terminal** icon in the sidebar, or use the keyboard shortcut to toggle it. The terminal opens as a panel within the Cabinet UI and connects to a new PTY session immediately.
+
+## How it works
+
+The Cabinet daemon (`server/cabinet-daemon.ts`) runs a WebSocket server on port 3001. When you open the terminal in the browser, the frontend creates a WebSocket connection and spawns a PTY process server-side via node-pty. All keystrokes are forwarded to the PTY; all output is streamed back to xterm.js in real time.
+
+Sessions are persistent within the daemon process. If you close the terminal panel and reopen it, you can reconnect to the same session as long as the process hasn't exited.
+
+```
+Browser (xterm.js)
+      ↕ WebSocket (ws://localhost:3001)
+Cabinet Daemon
+      └── node-pty → /bin/bash (or $SHELL)
+```
+
+## Starting the daemon
+
+The terminal server is part of the Cabinet daemon. Start it with:
+
+<Tabs>
+  <Tab title="Development">
+    ```bash
+    npm run dev:all
+    ```
+    Starts both the Next.js server (port 3000) and the Cabinet daemon (port 3001).
+  </Tab>
+  <Tab title="Daemon only">
+    ```bash
+    npm run dev:daemon
+    ```
+    Starts only the Cabinet daemon (terminal + job scheduler).
+  </Tab>
+  <Tab title="Production">
+    ```bash
+    npm run start
+    ```
+    Starts both servers in production mode.
+  </Tab>
+</Tabs>
+
+<Warning>
+  The terminal will not work if the daemon is not running. If you started Cabinet with `npm run dev` (Next.js only), open a second terminal and run `npm run dev:daemon`.
+</Warning>
+
+## What you can do
+
+### Run shell commands
+
+The terminal gives you a full shell session in the working directory of your Cabinet data. You can run any command your system supports.
+
+```bash
+ls data/
+cat data/.agents/ceo/persona.md
+git log --oneline -10
+```
+
+### Use Claude Code directly
+
+Claude Code CLI is one of the supported agent providers. You can invoke it directly from the terminal for interactive sessions outside of Cabinet's scheduled agent runner.
+
+```bash
+claude
+```
+
+This opens an interactive Claude Code session. You can give it instructions, ask it to read files, write code, or edit knowledge base pages — all from the terminal.
+
+### Use Codex CLI directly
+
+If you have Codex installed, run it the same way:
+
+```bash
+codex
+```
+
+### Run agent sessions manually
+
+Every agent in Cabinet maps to a directory under `data/.agents/{slug}/`. You can trigger an agent job manually from the terminal by running the prompt directly with your AI provider.
+
+```bash
+claude -p "$(cat data/.agents/ceo/jobs/weekly-report.md)"
+```
+
+### Debug agent output
+
+Agent sessions are stored in `data/.agents/{slug}/sessions/`. You can inspect raw session JSON files or tail logs directly.
+
+```bash
+ls data/.agents/content-marketer/sessions/
+cat data/.agents/content-marketer/sessions/latest.json
+```
+
+### Run npm scripts
+
+You can run any project-level npm script from the terminal — useful for rebuilding, linting, or running tests on linked repositories.
+
+```bash
+npm run build
+npm run lint
+```
+
+## Keyboard shortcuts
+
+Standard terminal keyboard shortcuts work inside the xterm.js panel:
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+C` | Interrupt the current process |
+| `Ctrl+D` | Send EOF / exit the shell |
+| `Ctrl+L` | Clear the terminal screen |
+| `Ctrl+A` | Move cursor to beginning of line |
+| `Ctrl+E` | Move cursor to end of line |
+| `Ctrl+R` | Reverse search command history |
+| `Up / Down` | Navigate command history |
+
+## Session lifecycle
+
+PTY sessions are tracked by the daemon. Sessions remain alive even if you close the terminal panel — the PTY process keeps running in the background. When you reopen the terminal, you reconnect to the existing session and see buffered output.
+
+Exited sessions are cleaned up after 10 minutes of inactivity. Completed session output is stored for 30 minutes for retrieval before being discarded.
+
+<Info>
+  The terminal's working directory defaults to the Cabinet `data/` directory. All relative paths you type are resolved from there.
+</Info>

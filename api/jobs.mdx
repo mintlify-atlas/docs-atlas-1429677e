@@ -1,0 +1,216 @@
+---
+title: "Jobs API"
+description: "Create and manage scheduled jobs for AI agents"
+---
+
+Jobs are recurring cron-scheduled tasks that agents run automatically. Each job is stored as a `.yaml` file under `/data/.agents/{slug}/jobs/`. All job endpoints are scoped under the owning agent.
+
+---
+
+## List jobs for an agent
+
+```
+GET /api/agents/[id]/jobs
+```
+
+Returns all jobs belonging to the specified agent.
+
+<ParamField path="id" type="string" required>
+  The agent slug (e.g. `ceo`, `content-marketer`)
+</ParamField>
+
+```bash
+curl http://localhost:3000/api/agents/ceo/jobs
+```
+
+**Response**
+
+<ResponseField name="jobs" type="JobConfig[]">
+  Array of job configuration objects
+
+  <Expandable title="JobConfig fields">
+    <ResponseField name="id" type="string">
+      Unique job identifier
+    </ResponseField>
+    <ResponseField name="name" type="string">
+      Human-readable job name
+    </ResponseField>
+    <ResponseField name="schedule" type="string">
+      Cron expression (e.g. `0 */6 * * *`)
+    </ResponseField>
+    <ResponseField name="enabled" type="boolean">
+      Whether the job is active
+    </ResponseField>
+    <ResponseField name="timeout" type="number">
+      Max execution time in seconds
+    </ResponseField>
+    <ResponseField name="agentSlug" type="string">
+      Slug of the agent this job belongs to
+    </ResponseField>
+    <ResponseField name="output_path" type="string">
+      KB path where agent output is written (e.g. `/go-to-market/reddit/`)
+    </ResponseField>
+    <ResponseField name="provider" type="string">
+      AI provider override for this job
+    </ResponseField>
+    <ResponseField name="createdAt" type="string">
+      ISO 8601 creation timestamp
+    </ResponseField>
+    <ResponseField name="updatedAt" type="string">
+      ISO 8601 last-updated timestamp
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Get a single job
+
+```
+GET /api/agents/[id]/jobs/[jobId]
+```
+
+Returns a single job by ID.
+
+<ParamField path="id" type="string" required>
+  Agent slug
+</ParamField>
+
+<ParamField path="jobId" type="string" required>
+  Job ID
+</ParamField>
+
+```bash
+curl http://localhost:3000/api/agents/ceo/jobs/reddit-scout
+```
+
+**Response**
+
+<ResponseField name="job" type="JobConfig">
+  The job configuration object
+</ResponseField>
+
+---
+
+## Create a job
+
+```
+POST /api/agents/[id]/jobs
+```
+
+Creates a new scheduled job for the given agent.
+
+<ParamField path="id" type="string" required>
+  Agent slug
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  Human-readable job name
+</ParamField>
+
+<ParamField body="schedule" type="string" required>
+  Cron expression for when the job runs
+</ParamField>
+
+<ParamField body="enabled" type="boolean">
+  Whether the job starts enabled (default: `true`)
+</ParamField>
+
+<ParamField body="timeout" type="number">
+  Max execution time in seconds (default: `300`)
+</ParamField>
+
+<ParamField body="output_path" type="string">
+  KB path where output should be written
+</ParamField>
+
+<ParamField body="prompt" type="string">
+  The prompt/instructions for the agent to execute during this job
+</ParamField>
+
+```bash
+curl -X POST http://localhost:3000/api/agents/researcher/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Weekly Market Scan",
+    "schedule": "0 8 * * 1",
+    "enabled": true,
+    "timeout": 300,
+    "output_path": "/research/market/",
+    "prompt": "Search for the latest market trends relevant to our product and write a summary."
+  }'
+```
+
+Returns `201` on success with `{ ok: true, job: JobConfig }`.
+
+---
+
+## Update a job
+
+```
+PUT /api/agents/[id]/jobs/[jobId]
+```
+
+Updates an existing job's configuration fields.
+
+<ParamField path="id" type="string" required>
+  Agent slug
+</ParamField>
+
+<ParamField path="jobId" type="string" required>
+  Job ID
+</ParamField>
+
+Accepts the same body fields as POST. To disable a job:
+
+```bash
+curl -X PUT http://localhost:3000/api/agents/researcher/jobs/weekly-market-scan \
+  -H "Content-Type: application/json" \
+  -d '{"enabled": false}'
+```
+
+### Toggle a job on/off
+
+Pass `action: "toggle"` to flip the `enabled` state without specifying the new value:
+
+```bash
+curl -X PUT http://localhost:3000/api/agents/researcher/jobs/weekly-market-scan \
+  -H "Content-Type: application/json" \
+  -d '{"action": "toggle"}'
+```
+
+### Trigger a job manually
+
+Pass `action: "run"` to execute the job immediately outside its cron schedule:
+
+```bash
+curl -X PUT http://localhost:3000/api/agents/researcher/jobs/weekly-market-scan \
+  -H "Content-Type: application/json" \
+  -d '{"action": "run"}'
+```
+
+<Note>
+  Manual runs count against the agent's monthly budget (`budget` field in persona).
+</Note>
+
+---
+
+## Delete a job
+
+```
+DELETE /api/agents/[id]/jobs/[jobId]
+```
+
+Permanently removes the job file from disk and unregisters it from the scheduler.
+
+<ParamField path="id" type="string" required>
+  Agent slug
+</ParamField>
+
+<ParamField path="jobId" type="string" required>
+  Job ID
+</ParamField>
+
+```bash
+curl -X DELETE http://localhost:3000/api/agents/researcher/jobs/weekly-market-scan
+```

@@ -1,0 +1,143 @@
+---
+title: "Knowledge Base"
+description: "File-based knowledge base where all content lives as Markdown on disk"
+---
+
+Cabinet's knowledge base is a directory of plain files on disk. There is no database, no sync service, and no proprietary format. Everything you write is stored as Markdown with YAML frontmatter under the `data/` directory, fully portable and git-trackable from day one.
+
+## How pages are stored
+
+Every page in Cabinet maps directly to a file or directory on disk:
+
+| On disk | In the UI |
+|---|---|
+| `data/product/index.md` | A page named "Product" with sub-pages |
+| `data/product/roadmap/index.md` | A sub-page nested under "Product" |
+| `data/notes.md` | A standalone leaf page |
+| `data/report.pdf` | A PDF viewer page |
+| `data/data-export.csv` | A CSV viewer page |
+| `data/gpu-emulator/index.html` (no `index.md`) | An embedded HTML app |
+
+<Note>
+  Directories that contain an `index.html` but no `index.md` are rendered as embedded iframes, not as Markdown pages. See [Embedded HTML apps](#embedded-html-apps) below.
+</Note>
+
+### Page frontmatter
+
+Every Markdown file starts with a YAML frontmatter block that stores metadata:
+
+```markdown
+---
+title: My Page
+created: 2024-01-01T00:00:00Z
+modified: 2024-01-15T12:30:00Z
+tags: [research, strategy]
+icon: 📝
+order: 1
+---
+
+Page content goes here.
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `title` | string | Display name in the sidebar and page header |
+| `created` | ISO timestamp | When the page was first created |
+| `modified` | ISO timestamp | Auto-updated on every save |
+| `tags` | array | Used for filtering in search |
+| `icon` | string | Emoji or icon shown next to the page title in the sidebar |
+| `order` | number | Sort position within the parent directory — lower numbers appear first |
+
+Pages without an explicit `order` value are sorted alphabetically after pages that have one.
+
+## Sidebar navigation
+
+The left sidebar displays your entire knowledge base as a collapsible tree. Cabinet builds this tree by reading the `data/` directory recursively at startup and whenever a page is created, moved, or deleted.
+
+<CardGroup cols={2}>
+  <Card title="Collapsible sections" icon="chevron-right">
+    Click any directory to expand or collapse its children. State is preserved across sessions.
+  </Card>
+  <Card title="Drag and drop" icon="grip-dots">
+    Drag pages to reorder them within a parent or move them to a different section.
+  </Card>
+  <Card title="Context menu" icon="ellipsis">
+    Right-click any page for options: rename, duplicate, move, or delete.
+  </Card>
+  <Card title="Order field" icon="list-ordered">
+    Set `order: 1` in frontmatter to pin a page to the top of its section.
+  </Card>
+</CardGroup>
+
+## Creating and organizing pages
+
+<Steps>
+  <Step title="Create a new page">
+    Click the **+** button in the sidebar next to any section, or right-click a page and choose **New page**. Cabinet creates a directory with an `index.md` and the frontmatter pre-filled.
+  </Step>
+  <Step title="Name your page">
+    Type a title. Cabinet slugifies the directory name automatically — for example, "Market Research" becomes `market-research/index.md` on disk.
+  </Step>
+  <Step title="Organize with nesting">
+    Drag a page onto another to nest it as a child. You can nest as deeply as you need. The directory structure mirrors what you see in the sidebar exactly.
+  </Step>
+  <Step title="Rename or move">
+    Right-click any page and select **Rename** or **Move**. Cabinet renames the directory on disk and updates the frontmatter title.
+  </Step>
+</Steps>
+
+## Embedded HTML apps
+
+Any directory that contains an `index.html` and no `index.md` is treated as an embedded app rather than a Markdown page. Cabinet renders it inside an iframe with the sidebar still visible.
+
+To make the app open in full-screen mode (sidebar and AI panel collapse automatically), add an empty `.app` marker file to the directory:
+
+```
+data/
+  gpu-emulator/
+    index.html       ← the app
+    .app             ← enables full-screen mode
+    styles.css
+    app.js
+```
+
+<Tip>
+  Full-screen mode is ideal for interactive tools, dashboards, or visualizations that need maximum space. A **Back to KB** button in the toolbar restores the normal layout.
+</Tip>
+
+AI agents can generate and write HTML apps directly into your knowledge base. Because they are plain files, they are version-controlled by git along with everything else.
+
+## Linked repositories
+
+A directory can be linked to an external Git repository by placing a `.repo.yaml` file inside it. This tells agents where to find the related source code so they can read and search it in context.
+
+```yaml
+# .repo.yaml
+name: my-project
+local: /path/to/local/clone
+remote: https://github.com/org/repo
+source: both
+branch: main
+description: Main application repository
+```
+
+| Field | Description |
+|---|---|
+| `name` | Human-readable name for the linked project |
+| `local` | Absolute path to a local clone on disk |
+| `remote` | GitHub URL (optional — for linking and fetching issues) |
+| `source` | `local`, `remote`, or `both` |
+| `branch` | Default branch agents should reference |
+| `description` | Context summary for agents |
+
+## Full-text search
+
+Press `Cmd+K` (or `Ctrl+K` on Linux/Windows) to open the search dialog. Cabinet searches across all page titles and body content with fuzzy matching. Results appear instantly as you type.
+
+## PDF and CSV viewers
+
+Drop a `.pdf` or `.csv` file anywhere in your `data/` directory. Cabinet detects these automatically and renders them with a built-in viewer — no external tools or plugins required. PDFs render inline; CSVs render as a sortable table.
+
+<Info>
+  PDFs and CSVs appear in the sidebar tree like any other page and are tracked in git history alongside your Markdown files.
+</Info>

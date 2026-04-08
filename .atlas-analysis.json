@@ -1,0 +1,108 @@
+{
+  "projectType": "saas",
+  "projectName": "Cabinet",
+  "projectDescription": "An AI-first self-hosted knowledge base and startup OS where everything lives as markdown files on disk, with AI agents that have memory, scheduled jobs, and a built-in WYSIWYG editor.",
+  "theme": "almond",
+  "primaryColor": "#ecddbe",
+  "lightColor": "#8e7451",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/knowledge-base",
+              "features/editor",
+              "features/git-history"
+            ]
+          },
+          {
+            "group": "AI Agents",
+            "pages": [
+              "agents/overview",
+              "agents/agent-library",
+              "agents/jobs",
+              "agents/sessions",
+              "agents/memory"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/environment",
+              "configuration/providers",
+              "configuration/self-hosting"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/onboarding",
+              "guides/embedded-apps",
+              "guides/terminal",
+              "guides/linked-repos"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/pages",
+              "api/agents",
+              "api/jobs",
+              "api/git",
+              "api/search"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "File-based knowledge base — all content is Markdown on disk, no database",
+    "AI agents with roles, scheduled heartbeat jobs, and persistent memory",
+    "20 pre-built agent templates (CEO, CFO, Marketing, Engineering, etc.)",
+    "WYSIWYG + Markdown editor powered by Tiptap with slash commands",
+    "Git-backed version history — every save auto-commits with full diff viewer",
+    "Embedded HTML apps — drop an index.html in any folder to render it as an iframe",
+    "Web terminal — full xterm.js + node-pty terminal in the browser",
+    "Full-text Cmd+K search across all pages with fuzzy matching",
+    "Multi-provider AI support — Claude Code, Codex CLI, and more",
+    "Electron desktop app and self-hosted Next.js deployment options"
+  ],
+  "publicApiSurface": [
+    "GET /api/tree — full file tree structure",
+    "GET/PUT/POST/DELETE /api/pages/[...path] — page CRUD",
+    "GET/POST /api/agents/personas — list and create agents",
+    "GET/PUT/DELETE /api/agents/personas/[slug] — agent detail and control",
+    "GET /api/agents/library — list pre-built agent templates",
+    "POST /api/agents/library/[slug]/add — instantiate agent from template",
+    "GET/POST /api/agents/[slug]/jobs — list and create agent jobs",
+    "POST /api/agents/[slug]/jobs/[id]/run — manually trigger a job",
+    "GET /api/git — git log, diff, and commit history",
+    "GET /api/search — full-text search across knowledge base",
+    "POST /api/ai/edit — AI-powered page editing via Claude",
+    "GET/POST /api/onboarding/status and /setup — onboarding flow"
+  ]
+}

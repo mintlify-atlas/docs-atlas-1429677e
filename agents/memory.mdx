@@ -1,0 +1,122 @@
+---
+title: "Agent memory"
+description: "Agents accumulate context, decisions, and learnings across sessions"
+keywords: ["agent memory", "context", "decisions", "learnings", "persistent memory", "Cabinet"]
+---
+
+Agent memory is what makes Cabinet agents different from one-shot chat sessions. Every time an agent runs a heartbeat, it reads its memory files at the start and writes updates at the end. The next run picks up where the last one left off. Context compounds over time — an agent that's been running for a month knows far more about your business than one that started today.
+
+## Memory files
+
+Each agent has four memory files stored under `/data/.agents/{slug}/memory/`:
+
+<CardGroup cols={2}>
+  <Card title="context.md" icon="file-text">
+    A running log of what the agent did in recent heartbeats. Each entry is timestamped. Cabinet keeps the 20 most recent entries to avoid unbounded growth.
+  </Card>
+  <Card title="decisions.md" icon="check-square">
+    A log of key decisions the agent made, with timestamps and reasoning. Decisions persist indefinitely — they're intentional records, not ephemeral context.
+  </Card>
+  <Card title="learnings.md" icon="book-open">
+    Accumulated insights the agent wants to remember long-term. Learnings are things the agent explicitly flags as worth keeping across many sessions.
+  </Card>
+  <Card title="stats.json" icon="bar-chart">
+    Usage statistics: total heartbeats used, and the timestamp of the last successful heartbeat.
+  </Card>
+</CardGroup>
+
+## Where memory lives on disk
+
+```
+/data/.agents/{slug}/memory/
+  context.md       ← recent heartbeat summaries (last 20)
+  decisions.md     ← timestamped decision log
+  learnings.md     ← long-term insights
+  stats.json       ← { heartbeatsUsed, lastHeartbeat }
+```
+
+All memory files are plain markdown except `stats.json`. They're visible in the Cabinet KB file browser and can be edited directly if you need to correct or supplement what the agent has written.
+
+## How agents read and write memory
+
+At the start of each heartbeat, the agent receives its memory files as context alongside its persona instructions:
+
+```markdown
+## Your Memory (from previous heartbeats)
+
+### Recent Context
+[contents of context.md]
+
+### Key Decisions
+[contents of decisions.md]
+
+### Learnings
+[contents of learnings.md]
+```
+
+At the end of the heartbeat, the agent writes a structured `memory` block in its output. Cabinet parses this block and updates the memory files automatically:
+
+````markdown
+```memory
+CONTEXT_UPDATE: Reviewed Reddit threads, found 3 relevant posts about knowledge bases. Updated /go-to-market/reddit/ with summaries.
+DECISION: Prioritizing r/startups over r/entrepreneur — higher signal-to-noise for our audience.
+LEARNING: Posts that mention "team wikis" outperform posts about "note-taking" in our target subreddits.
+```
+````
+
+| Directive | What it updates |
+|-----------|----------------|
+| `CONTEXT_UPDATE` | Appends a new timestamped entry to `context.md` |
+| `DECISION` | Appends a new timestamped entry to `decisions.md` |
+| `LEARNING` | Appends a new timestamped entry to `learnings.md` |
+
+## Stats: tracking usage
+
+`stats.json` tracks two values:
+
+```json
+{
+  "heartbeatsUsed": 42,
+  "lastHeartbeat": "2026-04-08T09:00:00.000Z"
+}
+```
+
+`heartbeatsUsed` is compared against the agent's `budget.max_runs_per_month` in `persona.md`. When the count reaches the budget, the agent stops running new heartbeats for the month. This prevents runaway usage if something goes wrong.
+
+The `lastHeartbeat` timestamp is used to compute when the next heartbeat will fire, which is displayed in the agent's detail view.
+
+## Viewing memory files
+
+Memory files appear as regular KB pages in the Cabinet file browser. Navigate to `.agents/{slug}/memory/` in the sidebar tree to open them. Because they're markdown, they're readable and editable like any other KB page.
+
+<Tip>
+If you want to give an agent a head start, you can pre-populate `context.md` or `decisions.md` before its first heartbeat. Write background context about your company, past decisions, or relevant history — the agent will read it on its first run.
+</Tip>
+
+## Inter-agent messaging
+
+Agents can send messages to each other using a simple inbox system. Messages are delivered to `/data/.agents/.messages/{slug}/` and read at the start of each heartbeat.
+
+During a heartbeat, an agent can send a message to another agent by including this directive in its memory block:
+
+```markdown
+MESSAGE_TO [ceo]: Marketing sees strong engagement on AI content this week. Suggest prioritizing that angle in the weekly report.
+```
+
+Cabinet routes the message to the CEO agent's inbox. The next time the CEO runs a heartbeat, it reads the message as part of its context.
+
+This lets agents coordinate without human intervention. A Researcher agent might send findings to the Content Marketer. A QA agent might flag issues to the CTO.
+
+<Info>
+Messages are cleared from an agent's inbox after a successful heartbeat. If you need to preserve a message for multiple runs, have the receiving agent write the key information to its `learnings.md`.
+</Info>
+
+## Why persistent memory matters
+
+The value of agent memory is cumulative. An agent that ran 50 heartbeats has:
+
+- A detailed history of what it worked on and what it found
+- A set of explicit decisions that reflect your actual priorities
+- Learnings that capture nuance that wasn't in the original persona
+
+This compounds in a way that single chat sessions can't. The agent gets more effective the longer it runs, because its context is richer and more specific to your situation.

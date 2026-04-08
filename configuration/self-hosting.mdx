@@ -1,0 +1,142 @@
+---
+title: "Self-Hosting"
+description: "Deploy Cabinet on your own server or run it as a desktop app"
+---
+
+Cabinet is self-hosted by design. Your data never leaves your machine or server. There are two ways to run Cabinet in production: as a Node.js server process, or as the packaged Electron desktop app.
+
+## Deployment options
+
+<CardGroup cols={2}>
+  <Card title="Node.js server" icon="server">
+    Run Cabinet as a Next.js app + daemon on any Linux or macOS machine. Ideal for team servers or home labs.
+  </Card>
+  <Card title="Electron desktop app" icon="desktop">
+    A packaged `.dmg` for macOS. No setup required — download and run. Best for personal use on a Mac.
+  </Card>
+</CardGroup>
+
+---
+
+## Node.js server
+
+### Build and start
+
+<Steps>
+  <Step title="Build the production bundle">
+    ```bash
+    npm run build
+    ```
+  </Step>
+  <Step title="Start both servers">
+    ```bash
+    npm run start
+    ```
+
+    This starts the Next.js app on port **3000** and the Cabinet daemon on port **3001**.
+  </Step>
+  <Step title="Configure your environment">
+    Copy the example environment file and edit it for your deployment:
+
+    ```bash
+    cp .env.example .env.local
+    ```
+
+    At minimum, set `KB_PASSWORD` and `DOMAIN` for a production deployment.
+  </Step>
+</Steps>
+
+### Recommended production settings
+
+```bash
+# .env.local
+KB_PASSWORD=your-strong-password
+DOMAIN=cabinet.yourcompany.com
+```
+
+<Warning>
+  If you expose Cabinet to the internet, always set `KB_PASSWORD`. Without it, anyone who reaches the URL can access your knowledge base.
+</Warning>
+
+### Ports
+
+| Server | Default port | Override with |
+|---|---|---|
+| Next.js app | `3000` | `CABINET_APP_PORT` |
+| Cabinet daemon | `3001` | `CABINET_DAEMON_PORT` |
+
+If you run Cabinet behind a reverse proxy (nginx, Caddy, etc.), proxy both ports and set `CABINET_APP_ORIGIN` and `CABINET_PUBLIC_DAEMON_ORIGIN` to match your public URLs.
+
+---
+
+## Electron desktop app
+
+Cabinet is available as a native macOS desktop application. The Electron build packages the Next.js app and daemon together — no Node.js installation required.
+
+<Steps>
+  <Step title="Download the installer">
+    Download the latest `.dmg` from the [Cabinet releases page](https://github.com/hilash/cabinet/releases).
+  </Step>
+  <Step title="Install the app">
+    Open the `.dmg` file and drag Cabinet to your Applications folder.
+  </Step>
+  <Step title="Launch Cabinet">
+    Open Cabinet from your Applications folder. The app starts both the Next.js server and the daemon automatically.
+  </Step>
+</Steps>
+
+<Note>
+  The Electron app manages ports and origins automatically. You don't need to configure `CABINET_APP_PORT`, `CABINET_DAEMON_PORT`, or the origin variables.
+</Note>
+
+### Auto-updates
+
+The Electron app checks for updates using a release manifest. When a new version is available, Cabinet will prompt you to update. You can customize the update check URL with `CABINET_RELEASE_MANIFEST_URL` if you self-host your own release distribution.
+
+---
+
+## Data directory
+
+All Cabinet content — knowledge base pages, agent configs, job definitions, and task data — is stored in a single data directory.
+
+| Deployment | Default location |
+|---|---|
+| Source / Node.js | `./data` (relative to project root) |
+| Electron desktop app | System app-data path (managed automatically) |
+
+You can override this for any deployment with the `CABINET_DATA_DIR` environment variable:
+
+```bash
+CABINET_DATA_DIR=/mnt/nas/cabinet-data
+```
+
+This is useful when you want to store the data directory on a network volume, a separate disk, or a shared path accessible to multiple team members.
+
+<Tip>
+  The data directory is a plain folder of Markdown files and YAML configs. You can open it in any text editor, browse it in Finder, or sync it with any tool that works with files.
+</Tip>
+
+---
+
+## Security
+
+### Password protection
+
+Set `KB_PASSWORD` to enable a login screen in front of the entire Cabinet UI. This is the primary access control mechanism for server deployments.
+
+```bash
+KB_PASSWORD=a-strong-password
+```
+
+There is no per-user authentication — the password is shared across all users who access the instance.
+
+### Data stays local
+
+Cabinet makes no external network calls during normal operation. Your knowledge base content is never sent to a cloud service. The only outbound connections are:
+
+- To your AI provider CLI (Claude Code, Codex) — only when an agent runs or you use the AI panel
+- To check for updates, if `CABINET_RELEASE_MANIFEST_URL` is configured
+
+### Git history as an audit trail
+
+Every save auto-commits to a local git repository inside the data directory. This gives you a complete history of every change made to your knowledge base — including which agent made it and when.

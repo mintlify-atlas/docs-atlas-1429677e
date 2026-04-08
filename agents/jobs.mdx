@@ -1,0 +1,115 @@
+---
+title: "Scheduled jobs"
+description: "Cron-based agent automation — define recurring tasks that agents run on schedule"
+keywords: ["jobs", "scheduled jobs", "cron", "automation", "agent tasks", "Cabinet"]
+---
+
+A job is a recurring task that an agent runs on a cron schedule. Each job has a prompt (the instructions for that run), a schedule, and an output path where the results land in the knowledge base. Jobs are the primary way agents do autonomous work — a marketing agent might scout Reddit every 6 hours, a CEO agent might post a weekly status report every Monday morning.
+
+Jobs are stored as YAML files under `/data/.agents/{slug}/jobs/` and are owned by the agent that runs them.
+
+## Job definition format
+
+```yaml
+id: reddit-scout
+name: Reddit Scout
+schedule: "0 */6 * * *"
+enabled: true
+timeout: 300
+output_path: /go-to-market/reddit/
+skills:
+  - web-search
+on_complete:
+  - git_commit
+```
+
+### Fields
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique identifier for the job (kebab-case) |
+| `name` | Human-readable display name shown in the UI |
+| `schedule` | Cron expression defining when the job runs |
+| `enabled` | `true` to run on schedule, `false` to pause |
+| `timeout` | Maximum run time in seconds before the job is killed |
+| `output_path` | KB directory where the agent writes output for this job |
+| `skills` | List of skills the agent can use during this job |
+| `on_complete` | Actions to run after a successful completion |
+
+### Cron schedule examples
+
+| Schedule | Expression |
+|----------|------------|
+| Every day at 8am | `0 8 * * *` |
+| Every 6 hours | `0 */6 * * *` |
+| Weekdays at 9am | `0 9 * * 1-5` |
+| Every Monday at 7am | `0 7 * * 1` |
+| Every hour | `0 * * * *` |
+
+## Setting up a job
+
+<Steps>
+  <Step title="Open the agent detail view">
+    Click the agent in the sidebar or on the agents page to open its detail view.
+  </Step>
+  <Step title="Go to the Jobs section">
+    Select **Jobs** from the vertical navigation in the agent detail view. You'll see all jobs currently configured for this agent.
+  </Step>
+  <Step title="Click + Add Job">
+    Click the **+ Add Job** button to open the job creation form.
+  </Step>
+  <Step title="Fill in the job details">
+    Set the name, schedule, output path, and write the job instructions — the prompt the agent receives when this job fires.
+  </Step>
+  <Step title="Save and enable">
+    Save the job. It's enabled by default. The Cabinet daemon picks up the new schedule automatically.
+  </Step>
+</Steps>
+
+## Manually triggering a job
+
+You don't have to wait for the cron schedule to test a job. In the **Jobs** section of any agent's detail view, click **Run now** on any job to trigger it immediately. The session output appears in the **Sessions** view for that agent.
+
+## Enabling and disabling jobs
+
+Each job has an enable/disable toggle in the jobs list. Disabling a job removes it from the cron scheduler without deleting the job definition. Re-enabling it adds it back to the schedule immediately.
+
+<Warning>
+Disabling a job does not cancel a run that's already in progress. It only prevents future scheduled triggers.
+</Warning>
+
+## Job history and run logs
+
+Click any job in the jobs list to expand its run history. Each entry shows:
+
+- **Status** — completed or failed
+- **Started at** — timestamp of when the run began
+- **Duration** — how long the run took
+- **Output** — link to the session transcript
+
+For detailed output, open the **Sessions** section and find the session that corresponds to the job run. Job sessions are labeled with the job name.
+
+## Post-completion actions
+
+The `on_complete` field lets you define actions that run automatically after a job finishes successfully.
+
+Currently supported:
+
+| Action | What it does |
+|--------|-------------|
+| `git_commit` | Commits all changes in the KB to git with an auto-generated message |
+
+```yaml
+on_complete:
+  - git_commit
+```
+
+You can also define `on_failure` actions that run when a job fails — useful for alerting or cleanup.
+
+## The output_path field
+
+The `output_path` field tells the agent where to write its results in the knowledge base. This is a KB-relative path — for example, `/go-to-market/reddit/` means the agent will create or update files inside that directory.
+
+<Tip>
+Set `output_path` to a directory that makes sense for humans to browse. Agent output shows up in the regular KB tree, so other agents and team members can read it.
+</Tip>

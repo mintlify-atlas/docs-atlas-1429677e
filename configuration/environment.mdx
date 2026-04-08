@@ -1,0 +1,79 @@
+---
+title: "Environment Variables"
+description: "Configure Cabinet using environment variables in .env.local"
+---
+
+Cabinet reads configuration from a `.env.local` file at the root of your project. None of these variables are required — Cabinet runs with sensible defaults out of the box.
+
+## Create your config file
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` with your preferred values. The file is gitignored by default, so your settings stay local.
+
+## Available variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `KB_PASSWORD` | _(empty)_ | Password to protect the entire UI behind a login screen. Leave empty to disable authentication. |
+| `DOMAIN` | `localhost` | Domain for the app. Set this to your public domain when deploying to a server. |
+| `CABINET_DATA_DIR` | `./data` | Path to the directory where Cabinet stores all knowledge base files, agent configs, and task data. |
+| `CABINET_RELEASE_MANIFEST_URL` | _(empty)_ | URL of a JSON release manifest used to check for updates. Not required for most installs. |
+| `CABINET_APP_PORT` | `3000` | Port for the Next.js app server. |
+| `CABINET_DAEMON_PORT` | `3001` | Port for the Cabinet daemon (WebSocket server for terminal sessions and job scheduling). |
+| `CABINET_APP_ORIGIN` | `http://127.0.0.1:3000` | Full origin URL for the app. Useful when Cabinet is embedded in Electron or behind a reverse proxy. |
+| `CABINET_PUBLIC_DAEMON_ORIGIN` | `ws://127.0.0.1:3001` | WebSocket origin for the daemon. Override this when the daemon is accessible at a different address than the default. |
+
+## Variable reference
+
+### `KB_PASSWORD`
+
+Set a password to protect the Cabinet UI. When set, any visit to Cabinet will require entering the password before accessing the knowledge base.
+
+```bash
+KB_PASSWORD=my-secret-password
+```
+
+Leave this empty if Cabinet is running on a private network or local machine where you don't need authentication.
+
+### `DOMAIN`
+
+The domain Cabinet is running on. Used for generating links and configuring cookies correctly in production.
+
+```bash
+DOMAIN=cabinet.mycompany.com
+```
+
+### `CABINET_DATA_DIR`
+
+By default, Cabinet stores all data in a `./data` directory relative to the project root. You can override this to store data on a different volume or shared path.
+
+```bash
+CABINET_DATA_DIR=/mnt/shared/cabinet-data
+```
+
+In the Electron desktop app, this defaults to a managed app-data path and you typically don't need to override it.
+
+### `CABINET_APP_PORT` and `CABINET_DAEMON_PORT`
+
+Override the default ports if they conflict with other services on your machine.
+
+```bash
+CABINET_APP_PORT=4000
+CABINET_DAEMON_PORT=4001
+```
+
+<Note>
+  If you change these ports, also update `CABINET_APP_ORIGIN` and `CABINET_PUBLIC_DAEMON_ORIGIN` to match.
+</Note>
+
+### `CABINET_APP_ORIGIN` and `CABINET_PUBLIC_DAEMON_ORIGIN`
+
+These control the full origin URLs used by the app and daemon. You only need to set these when running Cabinet behind a reverse proxy, on a custom port, or embedded in Electron.
+
+```bash
+CABINET_APP_ORIGIN=https://cabinet.mycompany.com
+CABINET_PUBLIC_DAEMON_ORIGIN=wss://cabinet.mycompany.com/daemon
+```

@@ -1,0 +1,129 @@
+---
+title: "Linked repositories"
+description: "Link a knowledge base directory to a Git repository so agents can read and search source code as context"
+---
+
+A linked repository connects a directory in your Cabinet knowledge base to a Git repository on disk (and optionally a remote URL). When an agent works on a KB section that has a linked repo, it can read source files, search for implementations, and understand the codebase as part of its context.
+
+## How it works
+
+Linking is done with a `.repo.yaml` config file placed inside any directory under `/data/`. Cabinet does not sync or manage the repository — it just tells agents where to find the code.
+
+When an agent runs and its working directory (or any parent directory) contains a `.repo.yaml`, the agent:
+
+1. Reads `.repo.yaml` to discover the linked repo
+2. Uses the `local` path to read and search source files on disk
+3. Uses the `remote` URL when creating links, referencing issues, or suggesting pull requests
+4. Includes the repo context when answering questions about the related KB content
+
+## The .repo.yaml format
+
+```yaml
+# .repo.yaml — links this KB directory to a Git repository
+name: my-project                           # Display name
+local: /path/to/local/clone               # Absolute path to local clone
+remote: https://github.com/org/repo       # GitHub repo URL (optional)
+source: both                              # local | remote | both
+branch: main                             # Default branch to reference
+description: Short description of what this repo contains
+```
+
+### Fields
+
+| Field | Required | Description |
+|---|---|---|
+| `name` | Yes | Human-readable project name shown in the KB |
+| `local` | No | Absolute path to the local clone. Agents read files from here. |
+| `remote` | No | GitHub repo URL. Agents link to issues, PRs, and branches from here. |
+| `source` | Yes | Where to look for code: `local`, `remote`, or `both` |
+| `branch` | No | Default branch name for links and agent context |
+| `description` | No | What the repo contains — helps agents understand context without reading every file |
+
+<Note>
+  At least one of `local` or `remote` must be provided. The `local` path must be accessible to the Cabinet process — it is read directly from disk, not cloned or fetched by Cabinet.
+</Note>
+
+### source field values
+
+- **`local`** — Agents only use the local clone. No remote URL is needed.
+- **`remote`** — Agents only reference the remote URL. Useful when you don't have a local clone but want agents to link to GitHub.
+- **`both`** — The local clone exists and is synced with the remote. Agents use the local path for reading code and the remote URL for linking.
+
+## Creating a linked repo
+
+<Steps>
+  <Step title="Create or navigate to a KB directory">
+    The `.repo.yaml` file can live in any existing directory under `/data/`. Often you'll create a dedicated section for the repo.
+
+    ```bash
+    mkdir data/my-project
+    ```
+  </Step>
+  <Step title="Create the .repo.yaml file">
+    Add a `.repo.yaml` to the directory:
+
+    ```yaml
+    name: my-project
+    local: /Users/you/code/my-project
+    remote: https://github.com/yourorg/my-project
+    source: both
+    branch: main
+    description: Core application — Next.js frontend and Node.js API
+    ```
+  </Step>
+  <Step title="Add KB content to the directory">
+    Create an `index.md` in the same directory to make it a visible KB page in the sidebar. This is where agents will write their output — architecture notes, code reviews, summaries.
+
+    ```bash
+    touch data/my-project/index.md
+    ```
+  </Step>
+</Steps>
+
+## Example directory structure
+
+```
+data/
+  my-project/
+    index.md          ← KB page for this project
+    .repo.yaml        ← links to source repo
+    architecture.md   ← agent-written architecture notes
+    review-2026-04.md ← agent code review output
+  gpu-emulator/
+    index.html        ← embedded app (copied from repo)
+    .app              ← full-screen mode
+    .repo.yaml        ← links to source repo
+```
+
+A `.repo.yaml` can also live in a parent directory. Agents traverse up the directory tree to find the nearest `.repo.yaml` when determining context for a given KB page.
+
+## Use cases
+
+<CardGroup cols={2}>
+  <Card title="CTO agent" icon="code">
+    Link your main application repo so the CTO agent can review architecture, flag technical debt, and write engineering briefs with full codebase context.
+  </Card>
+  <Card title="DevOps agent" icon="server">
+    Link your infrastructure repo so the DevOps agent can audit Dockerfiles, CI configs, and Terraform files when writing runbooks.
+  </Card>
+  <Card title="QA agent" icon="magnifying-glass">
+    Link a test suite repo so the QA agent can scan for coverage gaps, flag untested paths, and write test plans grounded in the actual code.
+  </Card>
+  <Card title="Editor agent" icon="pen">
+    Link a docs repo so the Editor agent can keep KB pages in sync with the source code it documents — updating examples when APIs change.
+  </Card>
+</CardGroup>
+
+## How the sidebar shows linked repos
+
+In the Cabinet sidebar, directories that contain a `.repo.yaml` display a linked folder icon next to the page name. Clicking the page opens its `index.md` (or the embedded app if it has `index.html`) as normal.
+
+## Requirements
+
+- The `local` path must be an **absolute path** that the Cabinet process can read. Relative paths are not supported.
+- The local clone does not need to be clean or up to date — agents read it as-is from disk.
+- Cabinet does not pull, fetch, or modify the linked repository. Managing the local clone (pulling updates, switching branches) is your responsibility.
+
+<Warning>
+  If `local` points to a path that does not exist or is not readable by the Cabinet process, agents will silently fall back to using only the `remote` URL (or skip repo context entirely if `source` is `local`).
+</Warning>

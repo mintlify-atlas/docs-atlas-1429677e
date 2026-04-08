@@ -1,0 +1,127 @@
+---
+title: "Embedded HTML apps"
+description: "Drop an index.html in any folder to render it as a full embedded app in your knowledge base"
+---
+
+Cabinet can render any directory that contains an `index.html` file (and no `index.md`) as an embedded web app. The app loads inside an iframe directly in the Cabinet UI, alongside your knowledge base. No build step, no deploy pipeline — just files on disk.
+
+This is one of Cabinet's biggest differentiators from tools like Obsidian or Notion: your KB can contain fully interactive, version-controlled mini-apps written in plain HTML, CSS, and JavaScript.
+
+## How it works
+
+Cabinet's tree builder scans the `/data/` directory. When it finds a folder that has `index.html` but no `index.md`, it marks that node as an embedded app rather than a markdown page. Clicking the node in the sidebar loads the `index.html` in an iframe.
+
+| Directory has | Renders as |
+|---|---|
+| `index.md` | Markdown page |
+| `index.html` (no `index.md`) | Embedded app (iframe) |
+| `index.html` + `.app` marker | Full-screen embedded app |
+
+## Creating an embedded app
+
+<Steps>
+  <Step title="Create a directory in your KB">
+    Create a new folder inside `/data/`. Use a slugified name (lowercase, hyphens).
+
+    ```bash
+    mkdir data/my-dashboard
+    ```
+  </Step>
+  <Step title="Add an index.html file">
+    Place your HTML file in the directory. Do not add an `index.md` — Cabinet uses the absence of `index.md` to identify embedded app directories.
+
+    ```html
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <title>My Dashboard</title>
+      <link rel="stylesheet" href="./styles.css" />
+    </head>
+    <body>
+      <h1>Dashboard</h1>
+      <script src="./app.js"></script>
+    </body>
+    </html>
+    ```
+  </Step>
+  <Step title="Open it in Cabinet">
+    The directory appears in the sidebar like any other KB page. Click it to load the app in an iframe with the sidebar still visible.
+  </Step>
+</Steps>
+
+## Full-screen mode
+
+By default, embedded apps render with the Cabinet sidebar visible. To collapse the sidebar and AI panel automatically when the app is opened, add a `.app` marker file to the directory.
+
+```bash
+touch data/my-dashboard/.app
+```
+
+The `.app` file is empty — its presence is the signal. When you click the page in the sidebar:
+
+- The sidebar collapses
+- The AI panel collapses
+- The app loads full-screen
+- A **Back to KB** button appears in the toolbar to restore the normal layout
+
+## Example directory structure
+
+```
+data/
+  my-dashboard/
+    index.html       ← the app entry point
+    .app             ← enables full-screen mode
+    styles.css       ← any supporting files
+    data.json        ← local data the app reads
+```
+
+Supporting files (CSS, JS, JSON, images) are served alongside `index.html` and accessible via relative paths from within the app.
+
+## Use cases
+
+<CardGroup cols={2}>
+  <Card title="Dashboards" icon="chart-bar">
+    Build a custom metrics dashboard that reads JSON files from your KB and renders charts directly in the browser.
+  </Card>
+  <Card title="Calculators and tools" icon="calculator">
+    Embed a pricing calculator, sizing tool, or any interactive form — no backend required.
+  </Card>
+  <Card title="AI-generated apps" icon="sparkles">
+    Ask an agent to write an `index.html` app and save it directly into a KB directory. The app appears in the sidebar immediately.
+  </Card>
+  <Card title="Prototypes" icon="pen-ruler">
+    Quickly test UI ideas or interactive mock-ups alongside your product docs, in the same git repo.
+  </Card>
+</CardGroup>
+
+## AI-generated apps
+
+You can ask any Cabinet agent to create an embedded app by writing an `index.html` file directly into your KB. For example, prompt the Editor agent:
+
+> Create a GPU utilization tracker at `data/gpu-tracker/index.html` that displays a real-time bar chart. Add a `.app` marker for full-screen mode.
+
+The agent uses its file-editing tools to write the HTML, CSS, and JS. Once saved, the directory appears in the sidebar and you can open it immediately.
+
+## Version control
+
+Embedded apps are version-controlled the same way as all other Cabinet content. Every save auto-commits via git. You can:
+
+- View the full diff of any HTML change in the Version History panel
+- Restore any previous version of an app from a past commit
+- Branch and merge apps alongside your markdown pages
+
+<Note>
+  Because apps are just files on disk, you can also edit `index.html` directly in your text editor, commit via git, and the changes will appear in Cabinet on the next page load.
+</Note>
+
+## Cabinet vs. Obsidian and Notion
+
+Embedded apps are a key differentiator. Neither Obsidian nor Notion supports running arbitrary HTML applications inside the knowledge base.
+
+| Feature | Cabinet | Obsidian | Notion |
+|---|---|---|---|
+| Embedded HTML apps | Yes | No | No |
+| Full-screen app mode | Yes | No | No |
+| AI-generated apps | Yes | No | No |
+| Version-controlled apps | Yes | Via plugin | No |

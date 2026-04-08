@@ -1,0 +1,132 @@
+---
+title: "Onboarding your AI team"
+description: "Answer 5 questions and Cabinet builds your custom AI team automatically"
+---
+
+When you open Cabinet for the first time, the onboarding wizard runs automatically. It asks you 5 short questions about your project, then recommends a starter team of AI agents tailored to your goals. The whole flow takes about two minutes.
+
+## The wizard flow
+
+<Steps>
+  <Step title="Welcome screen">
+    Cabinet greets you with a brief intro. Click **Get started** to begin. This screen won't appear again once onboarding is complete.
+  </Step>
+  <Step title="Tell Cabinet about your project">
+    You'll answer three questions about your work:
+
+    1. **What's your company or project name?** — Used to personalize each agent's `persona.md` with your company name. Required to proceed.
+    2. **What do you do?** — A short description of your product or work (e.g., "We make a podcast about AI startups").
+    3. **What are your top 3 goals right now?** — Cabinet uses this to determine which agents will be most useful to you.
+  </Step>
+  <Step title="A little more context">
+    Two final questions help Cabinet narrow down your team:
+
+    4. **How big is your team?** — Select one: **Just me**, **2–5**, **5–20**, or **20+**.
+    5. **What's your most immediate priority?** — A single sentence describing what you need done first (e.g., "Set up our content engine and start publishing weekly").
+  </Step>
+  <Step title="Review your suggested team">
+    Cabinet analyzes your answers and suggests a starter team. The CEO Agent and Editor are always included. Additional agents — such as the Content Marketer, SEO Specialist, Sales Agent, or QA Agent — are suggested based on keywords in your goals and priority.
+
+    Check the agents you want. You can deselect any suggestion and add more from the library later.
+  </Step>
+  <Step title="Verify your AI provider">
+    Cabinet checks whether a supported AI provider CLI is installed and authenticated on your machine. Supported providers are detected automatically.
+
+    If a provider is missing, expand the **Install instructions** section for setup steps. Once installed, click **Re-check providers** to verify. You can skip this step and configure your provider later.
+  </Step>
+  <Step title="Set up your team">
+    Click **Set up team** on the final screen. Cabinet calls `POST /api/onboarding/setup` with your answers and selected agents. In the background it:
+
+    - Copies each selected agent template from `/data/.agents/.library/` to `/data/.agents/{slug}/`
+    - Injects your company name and description into each agent's `persona.md`
+    - Writes your context to `/data/.agents/.config/company.json`
+    - Creates a `onboarding-complete.json` marker so the wizard doesn't run again
+    - Redirects you to the agent list view
+  </Step>
+</Steps>
+
+## What gets created
+
+### company.json
+
+Your onboarding answers are saved to `/data/.agents/.config/company.json`. Agents read this file to understand your company context when they run.
+
+```json
+{
+  "companyName": "Acme Corp",
+  "description": "We make a podcast about AI startups",
+  "goals": "Grow newsletter to 1k subs, launch blog, get first 10 customers",
+  "teamSize": "Just me",
+  "priority": "Set up our content engine and start publishing weekly"
+}
+```
+
+### Agent directories
+
+Each selected agent is created as a directory under `/data/.agents/`:
+
+```
+data/
+  .agents/
+    .config/
+      company.json             ← your onboarding answers
+      onboarding-complete.json ← prevents re-running the wizard
+    ceo/
+      persona.md               ← CEO role + your company context injected
+      jobs/
+      skills/
+      sessions/
+    content-marketer/
+      persona.md
+      ...
+```
+
+The `persona.md` for each agent includes a `{{company_name}}` substitution filled in from your answers.
+
+## The 20 pre-built agent templates
+
+Cabinet ships templates for the following roles:
+
+| Department | Agents |
+|---|---|
+| **Leadership** | CEO, COO, CFO, CTO |
+| **Product** | Product Manager, UX Designer |
+| **Marketing** | Content Marketer, SEO Specialist, Social Media, Growth Marketer, Copywriter |
+| **Engineering** | Editor, QA Agent, DevOps Engineer |
+| **Sales & Support** | Sales Agent, Customer Success |
+| **Analytics** | Data Analyst |
+| **Operations** | People Ops, Legal Advisor, Researcher |
+
+Two agents are always present regardless of what you select during onboarding:
+
+- **General** — Headless Claude with no persona. Use it for ad-hoc tasks that don't belong to a specific agent.
+- **Editor** — KB content editing, formatting, and linking.
+
+## Adding agents after onboarding
+
+You can add more agents at any time from the agent library.
+
+<Steps>
+  <Step title="Go to the agents page">
+    Click **Agents** in the sidebar. This opens the agent card grid.
+  </Step>
+  <Step title="Open the library">
+    Click **+ Add from Library** in the top-right corner of the agents page.
+  </Step>
+  <Step title="Select a template">
+    Browse agents by department. Click **+ Add** on any card to instantiate that agent from its template. The agent directory is created immediately under `/data/.agents/{slug}/`.
+  </Step>
+</Steps>
+
+## Re-running or modifying onboarding
+
+Onboarding runs once, controlled by the presence of `/data/.agents/.config/onboarding-complete.json`. To re-run it:
+
+1. Delete `/data/.agents/.config/onboarding-complete.json`
+2. Reload Cabinet — the wizard will appear on the next page load
+
+<Warning>
+  Re-running onboarding does not delete existing agents. It will overwrite `company.json` with your new answers, but previously created agent directories are not touched.
+</Warning>
+
+To update your company context without re-running the full wizard, edit `/data/.agents/.config/company.json` directly. Changes take effect the next time an agent runs.

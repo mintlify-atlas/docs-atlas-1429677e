@@ -1,0 +1,112 @@
+---
+title: "Agent library"
+description: "20 pre-built agent templates ready to add to your team"
+keywords: ["agent library", "templates", "pre-built agents", "onboarding", "Cabinet team"]
+---
+
+Cabinet ships with 20 pre-built agent templates organized by department. Each template includes a persona definition, default jobs, and a KB workspace path. During onboarding, Cabinet suggests which agents to add based on your answers. You can also add or remove agents at any time from the agents page.
+
+## Available templates
+
+<CardGroup cols={2}>
+  <Card title="Leadership" icon="crown">
+    **CEO** — Strategic direction, goal setting, team coordination
+
+    **COO** — Operations, process optimization, team efficiency
+
+    **CFO** — Financial planning, budget tracking, reporting
+
+    **CTO** — Technical strategy, architecture decisions, engineering oversight
+  </Card>
+  <Card title="Product" icon="box">
+    **Product Manager** — Roadmap planning, feature prioritization, stakeholder updates
+
+    **UX Designer** — User research synthesis, design principles, feedback analysis
+  </Card>
+  <Card title="Marketing" icon="megaphone">
+    **Content Marketer** — Blog posts, content calendar, editorial planning
+
+    **SEO Specialist** — Keyword research, on-page optimization, performance tracking
+
+    **Social Media** — Post drafting, engagement strategy, platform-specific content
+
+    **Growth Marketer** — Funnel analysis, experiment ideas, growth metrics
+
+    **Copywriter** — Landing page copy, email sequences, messaging frameworks
+  </Card>
+  <Card title="Engineering" icon="code">
+    **Editor** — KB content editing, formatting, and linking (always present)
+
+    **QA Agent** — Test coverage analysis, bug triage, quality checklists
+
+    **DevOps Engineer** — Infrastructure notes, deployment checklists, runbooks
+  </Card>
+  <Card title="Sales & Support" icon="handshake">
+    **Sales Agent** — Deal tracking, outreach sequences, pipeline notes
+
+    **Customer Success** — Onboarding materials, health checks, renewal prep
+  </Card>
+  <Card title="Analytics" icon="chart-bar">
+    **Data Analyst** — Metrics summaries, trend analysis, reporting templates
+  </Card>
+  <Card title="Operations" icon="briefcase">
+    **People Ops** — Hiring docs, onboarding checklists, team processes
+
+    **Legal Advisor** — Contract summaries, compliance notes, policy drafts
+
+    **Researcher** — Competitive research, market analysis, source synthesis
+  </Card>
+</CardGroup>
+
+## Adding an agent from the library
+
+<Steps>
+  <Step title="Open the agents page">
+    Click **Agents** in the sidebar under the **Team** section. This opens the agent card grid.
+  </Step>
+  <Step title="Open the library">
+    Click **+ Add from Library** in the top-right corner of the agents page.
+  </Step>
+  <Step title="Browse and select a template">
+    Templates are grouped by department. Each card shows the agent's name, emoji, and a short description of its role. Click **+ Add** on any template.
+  </Step>
+  <Step title="Agent is created">
+    Cabinet copies the template from `/data/.agents/.library/{slug}/` into `/data/.agents/{slug}/`, injects your company context from onboarding, and opens the agent's detail view.
+  </Step>
+</Steps>
+
+## Customizing an agent after adding it
+
+Once an agent is added, its `persona.md` is yours to edit. Open the agent's detail view and go to the **Definition** section to see and edit the persona.
+
+Things you'll commonly customize:
+
+- **Persona body** — the instructions the agent follows. Add specific goals, tone guidelines, or constraints for your company.
+- **Heartbeat schedule** — adjust the cron expression to match how often you want the agent to run.
+- **Budget** — set `max_runs_per_month` to control how many times the agent can execute in a given month.
+- **Workspace** — set the KB directory where the agent writes its output.
+
+You can also edit `persona.md` directly in the KB file browser, since it's a plain markdown file on disk.
+
+## Creating a custom agent from scratch
+
+If none of the library templates fit, you can create an agent from scratch.
+
+<Steps>
+  <Step title="Click the new agent card">
+    On the agents page, click the **+ New Agent** card at the end of the grid.
+  </Step>
+  <Step title="Fill in the details">
+    Provide a name, emoji, department, and role description. Cabinet creates the agent directory and a starter `persona.md`.
+  </Step>
+  <Step title="Write the persona instructions">
+    In the **Definition** section of the agent detail view, write the markdown body — this is the system prompt the agent receives at the start of every heartbeat or session.
+  </Step>
+  <Step title="Add jobs and skills">
+    Use the **Jobs** and **Skills** sections to configure what the agent does on schedule and what capabilities it can use.
+  </Step>
+</Steps>
+
+<Tip>
+Start with a library template that's closest to what you need, then modify the persona body. It's faster than starting from scratch and gives you a working job configuration to build from.
+</Tip>

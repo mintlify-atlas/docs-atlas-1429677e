@@ -1,0 +1,196 @@
+---
+title: "Pages API"
+description: "Create, read, update, and delete knowledge base pages"
+---
+
+The Pages API lets you programmatically manage content in your Cabinet knowledge base. All pages are stored as Markdown files on disk and returned as JSON.
+
+## Base URL
+
+```
+http://localhost:3000/api
+```
+
+---
+
+## Get file tree
+
+<ParamField query="GET /api/tree" type="endpoint">
+  Returns the full knowledge base file tree.
+</ParamField>
+
+```bash
+curl http://localhost:3000/api/tree
+```
+
+**Response**
+
+```json
+{
+  "tree": [
+    {
+      "name": "getting-started",
+      "path": "getting-started",
+      "type": "directory",
+      "children": [
+        { "name": "index.md", "path": "getting-started/index.md", "type": "file" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Get a page
+
+```
+GET /api/pages/[...path]
+```
+
+Returns the content and metadata of a page.
+
+<ParamField path="path" type="string" required>
+  Path to the page relative to the data directory, e.g. `getting-started` or `research/market-analysis`
+</ParamField>
+
+```bash
+curl http://localhost:3000/api/pages/getting-started
+```
+
+**Response**
+
+<ResponseField name="content" type="string">
+  The Markdown content of the page (body only, frontmatter stripped)
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Page title from frontmatter
+</ResponseField>
+
+<ResponseField name="created" type="string">
+  ISO 8601 creation timestamp
+</ResponseField>
+
+<ResponseField name="modified" type="string">
+  ISO 8601 last-modified timestamp
+</ResponseField>
+
+<ResponseField name="tags" type="string[]">
+  Tags array from frontmatter
+</ResponseField>
+
+<ResponseField name="icon" type="string">
+  Emoji icon from frontmatter
+</ResponseField>
+
+---
+
+## Create a page
+
+```
+POST /api/pages/[...path]
+```
+
+Creates a new page at the given path.
+
+<ParamField path="path" type="string" required>
+  Path for the new page
+</ParamField>
+
+<ParamField body="content" type="string">
+  Markdown content for the page body
+</ParamField>
+
+<ParamField body="title" type="string">
+  Page title (written to frontmatter)
+</ParamField>
+
+<ParamField body="icon" type="string">
+  Emoji icon for the page
+</ParamField>
+
+```bash
+curl -X POST http://localhost:3000/api/pages/my-new-page \
+  -H "Content-Type: application/json" \
+  -d '{"title": "My New Page", "content": "# Hello\n\nThis is a new page."}'
+```
+
+---
+
+## Update a page
+
+```
+PUT /api/pages/[...path]
+```
+
+Replaces the content of an existing page.
+
+<ParamField path="path" type="string" required>
+  Path to the page
+</ParamField>
+
+<ParamField body="content" type="string" required>
+  Full Markdown content to write
+</ParamField>
+
+```bash
+curl -X PUT http://localhost:3000/api/pages/my-page \
+  -H "Content-Type: application/json" \
+  -d '{"content": "# Updated\n\nNew content here."}'
+```
+
+---
+
+## Delete a page
+
+```
+DELETE /api/pages/[...path]
+```
+
+Deletes a page or directory from the knowledge base.
+
+```bash
+curl -X DELETE http://localhost:3000/api/pages/old-page
+```
+
+---
+
+## Patch a page
+
+```
+PATCH /api/pages/[...path]
+```
+
+Partially update a page — rename, move, or update metadata fields without replacing content.
+
+<ParamField body="title" type="string">
+  New title
+</ParamField>
+
+<ParamField body="icon" type="string">
+  New icon emoji
+</ParamField>
+
+<ParamField body="tags" type="string[]">
+  Updated tags array
+</ParamField>
+
+---
+
+## Upload a file
+
+```
+POST /api/upload/[...path]
+```
+
+Uploads a file (image, PDF, CSV) to a page's directory. Send as `multipart/form-data`.
+
+```bash
+curl -X POST http://localhost:3000/api/upload/my-page \
+  -F "file=@screenshot.png"
+```
+
+<Note>
+  Uploaded files are stored alongside the page's `index.md` in the same directory on disk.
+</Note>

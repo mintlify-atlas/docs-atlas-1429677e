@@ -1,0 +1,95 @@
+---
+title: "Editor"
+description: "WYSIWYG + Markdown editor with slash commands, tables, code blocks, and AI editing"
+---
+
+Cabinet's editor is built on [Tiptap](https://tiptap.dev), a ProseMirror-based rich text framework. You write in a WYSIWYG interface and the content is stored on disk as Markdown. The conversion is lossless in both directions — every format the editor supports round-trips cleanly to and from Markdown.
+
+## Markdown roundtrip
+
+When you open a page, Cabinet reads the `.md` file from disk and converts it to HTML for Tiptap to render. When you save, Tiptap's HTML is converted back to Markdown using [Turndown](https://github.com/mixmark-io/turndown) with GFM support, then written to disk with the updated `modified` timestamp in frontmatter.
+
+This means you can:
+- Edit pages in Cabinet's UI and see them as clean Markdown on disk
+- Edit the raw `.md` files in any text editor and have Cabinet render them correctly
+- Use git to inspect, diff, and revert changes at the file level
+
+## Slash commands
+
+Type `/` anywhere in the editor to open the command menu. Common slash commands include:
+
+| Command | What it inserts |
+|---|---|
+| `/heading1`, `/heading2`, `/heading3` | H1, H2, H3 headings |
+| `/bullet` | Bulleted list |
+| `/numbered` | Numbered list |
+| `/task` | Task list with checkboxes |
+| `/table` | Blank table with header row |
+| `/code` | Fenced code block |
+| `/image` | Image upload prompt |
+| `/quote` | Block quote |
+| `/divider` | Horizontal rule |
+
+## Supported content types
+
+<CardGroup cols={2}>
+  <Card title="Tables" icon="table">
+    Full GFM tables with add/remove row and column controls. Renders as a standard Markdown table on disk.
+  </Card>
+  <Card title="Code blocks" icon="code">
+    Fenced code blocks with language selection. Stored with the language tag, e.g. ` ```python `.
+  </Card>
+  <Card title="Task lists" icon="circle-check">
+    Checkbox lists with checked/unchecked state, stored as GFM task list syntax (`- [ ]` / `- [x]`).
+  </Card>
+  <Card title="Images" icon="image">
+    Upload images directly to the page directory. Stored as relative paths (`./image.png`) next to the Markdown file.
+  </Card>
+  <Card title="Wiki links" icon="link">
+    Type `[[Page Name]]` to link to another page in your knowledge base. Rendered as a clickable internal link.
+  </Card>
+  <Card title="Block quotes" icon="quote-left">
+    Standard Markdown block quotes (`> text`) rendered with a left border in the UI.
+  </Card>
+</CardGroup>
+
+## Auto-save
+
+The editor saves automatically. After your last keystroke, Cabinet waits 500 ms and then writes the page to disk and triggers a git auto-commit. You never need to press a save button.
+
+<Note>
+  The auto-commit is debounced separately — git commits are batched within a 5-second window so rapid edits don't generate hundreds of commits.
+</Note>
+
+## AI panel
+
+The AI panel sits on the right side of the screen. Open it by clicking the sparkle icon in the toolbar. From the panel, you can give Cabinet an instruction in plain language and it will edit the current page directly.
+
+<Steps>
+  <Step title="Open the AI panel">
+    Click the sparkle icon in the top-right toolbar, or use the keyboard shortcut shown in the header.
+  </Step>
+  <Step title="Write an instruction">
+    Describe what you want changed. For example: "Add a summary section at the top" or "Rewrite the second paragraph to be more concise."
+  </Step>
+  <Step title="Attach context with @ mentions">
+    Type `@` followed by a page name to attach that page's content as context. For example: `@Competitor Analysis` includes the full text of that page so Claude has the relevant background.
+  </Step>
+  <Step title="Review the result">
+    Cabinet calls Claude in headless mode with the file path and your instruction. Claude reads the file and makes targeted edits — it does not replace the entire file. The AI panel shows a summary of what changed.
+  </Step>
+</Steps>
+
+<Warning>
+  Claude edits files directly on disk using its file editing tools. If a result is not what you expected, open Version History (the clock icon in the toolbar) and restore the previous version.
+</Warning>
+
+### How AI editing works
+
+The `/api/ai/edit` endpoint passes the file path and your instruction to Claude CLI running in headless mode (`claude -p`). Claude reads the current file content, identifies the relevant section, and writes only the changed portion back. This approach preserves all existing content and frontmatter that you did not ask to modify.
+
+The `@` mention system fetches the full Markdown content of each mentioned page and appends it to the prompt, giving Claude the context it needs without you having to copy-paste anything.
+
+## Dark and light mode
+
+Cabinet defaults to dark mode. Click the theme toggle in the header to switch to light mode. The preference is stored locally and persists across sessions.

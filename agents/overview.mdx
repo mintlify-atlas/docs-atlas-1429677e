@@ -1,0 +1,125 @@
+---
+title: "AI agents overview"
+description: "AI agents with persistent memory, scheduled jobs, and roles — like a real team working in your knowledge base"
+keywords: ["agents", "AI team", "persona", "heartbeat", "knowledge base", "Cabinet"]
+---
+
+An agent in Cabinet is a persistent AI persona with a role, a set of skills, and a schedule. Unlike a one-shot chat session, an agent runs on a cron schedule, writes its output directly into the knowledge base, and accumulates memory across runs. Over time, context compounds — the agent knows what it did last week, what decisions were made, and what it still needs to do.
+
+Think of agents less like chat assistants and more like teammates: they have a workspace, a job list, and a running log of everything they've touched.
+
+## Two always-present agents
+
+Two agents exist in every Cabinet installation and cannot be removed:
+
+<CardGroup cols={2}>
+  <Card title="General" icon="robot">
+    A headless Claude session with no persona and no heartbeat. Use it for ad-hoc tasks that don't belong to a specific agent — quick research, one-off edits, exploratory questions. Manual sessions only.
+  </Card>
+  <Card title="Editor" icon="pencil">
+    Focused on KB content editing, formatting, and linking. The Editor agent is sorted to appear first in the agents list. It runs live terminal sessions and writes its output directly to KB pages.
+  </Card>
+</CardGroup>
+
+Additional agents — CEO, Content Marketer, QA Agent, and others — are added from the agent library during onboarding or at any time from the agents page.
+
+## Finding agents in the UI
+
+In the sidebar, look for the **Team** section. Click **Agents** to open the agent card grid. Clicking an individual agent in the sidebar goes directly to that agent's detail view.
+
+```
+── Team ──
+▾ Agents
+  🤖 General
+  📝 Editor
+  🎯 CEO          ●   ← green dot = active
+  📣 Marketing    ●
+```
+
+Each agent shows its emoji, name, and a status indicator. A green dot means the agent is currently active or running.
+
+## Agent statuses
+
+| Status | Meaning |
+|--------|---------|
+| **Active** | The agent is configured and its heartbeat schedule is registered |
+| **Idle** | The agent is active but not currently running |
+| **Running** | A heartbeat or manual session is executing right now |
+| **Error** | The last run failed; the agent may have been auto-paused |
+
+<Note>
+After three consecutive failed heartbeats, Cabinet automatically pauses the agent and posts an alert. You can reactivate it from the agent's detail view.
+</Note>
+
+## Agent disk layout
+
+Every agent maps to a directory under `/data/.agents/{slug}/`. This structure is transparent — you can inspect or edit these files directly in the Cabinet KB or from the terminal.
+
+```
+/data/.agents/{slug}/
+  persona.md          ← agent definition (role, schedule, budget)
+  jobs/
+    {job-id}.yaml     ← job definitions with cron schedules
+  skills/
+    {skill-name}.md   ← skill definitions available to this agent
+  sessions/
+    {session-id}.json ← session metadata for each run
+  memory/
+    context.md        ← running context from previous heartbeats
+    decisions.md      ← decisions log
+    learnings.md      ← accumulated learnings
+    stats.json        ← usage stats (heartbeatsUsed, lastHeartbeat)
+```
+
+Agent library templates live at `/data/.agents/.library/` and are read-only reference files that Cabinet uses when you add an agent from the library.
+
+Inter-agent messages are delivered to `/data/.agents/.messages/{slug}/` — a simple inbox that each agent reads at the start of its heartbeat.
+
+## The persona.md format
+
+`persona.md` is the source of truth for an agent. It uses YAML frontmatter for structured metadata and a markdown body for the agent's persona instructions.
+
+```markdown
+---
+name: CEO
+slug: ceo
+emoji: 🎯
+type: lead
+department: leadership
+workspace: /
+schedule:
+  heartbeat: "0 9 * * 1-5"
+budget:
+  max_runs_per_month: 100
+---
+
+# CEO Agent
+
+You are the CEO of {{company_name}}. Your role is to:
+
+1. **Set strategic direction** — define and track company goals
+2. **Coordinate the team** — assign tasks to agents
+3. **Review progress** — check status, unblock agents
+4. **Communicate** — post updates, respond to human input
+```
+
+### Frontmatter fields
+
+| Field | Description |
+|-------|-------------|
+| `name` | Display name shown in the UI |
+| `slug` | URL-safe identifier, also the directory name under `.agents/` |
+| `emoji` | Emoji shown in the sidebar and agent card |
+| `type` | `lead` or `specialist` — used for grouping in the UI |
+| `department` | Department label (leadership, marketing, engineering, etc.) |
+| `workspace` | KB path where the agent writes its output (e.g. `/go-to-market/`) |
+| `schedule.heartbeat` | Cron expression for automated runs |
+| `budget.max_runs_per_month` | Hard cap on heartbeat executions per month |
+
+The `{{company_name}}` placeholder in the persona body is replaced with values from your onboarding answers when Cabinet sets up the agent.
+
+## How agents interact with the knowledge base
+
+Each agent has a `workspace` field that points to a directory in the KB. When an agent runs — whether on schedule or manually — it reads from its memory files, processes its inbox, and writes output to its workspace. The KB becomes the shared context between the agent and the rest of the team.
+
+Git-backed history means every agent write is versioned. You can inspect what an agent changed, revert a bad run, or compare outputs across weeks.

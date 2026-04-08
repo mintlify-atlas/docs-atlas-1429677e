@@ -1,0 +1,118 @@
+---
+title: "AI Providers"
+description: "Connect Cabinet to Claude Code, Codex, or other AI providers"
+---
+
+Cabinet delegates all AI work to external CLI tools — it does not call any AI API directly. This is the BYOAI (Bring Your Own AI) model: you install and authenticate a supported CLI on your machine, and Cabinet uses it to run agents, process jobs, and respond to AI panel requests.
+
+Cabinet currently supports two providers:
+
+<CardGroup cols={2}>
+  <Card title="Claude Code" icon="sparkles">
+    Powered by Anthropic's Claude. Requires a Claude Max or Team subscription. The most capable option for most use cases.
+  </Card>
+  <Card title="Codex CLI" icon="bot">
+    Powered by OpenAI. Requires an OpenAI API key. A strong alternative if you already have OpenAI access.
+  </Card>
+</CardGroup>
+
+## Setting up a provider
+
+<Tabs>
+  <Tab title="Claude Code">
+    Claude Code requires a **Claude Max or Team plan**. It authenticates via your Claude account rather than an API key.
+
+    <Steps>
+      <Step title="Get a Claude subscription">
+        You need a [Claude Max or Team plan](https://claude.ai/settings/billing) to use Claude Code. The free tier is not supported.
+      </Step>
+      <Step title="Install the Claude Code CLI">
+        ```bash
+        npm install -g @anthropic-ai/claude-code
+        ```
+      </Step>
+      <Step title="Log in">
+        Run `claude` in your terminal and follow the login prompts to authenticate with your Anthropic account.
+
+        ```bash
+        claude
+        ```
+      </Step>
+      <Step title="Select Claude Code in Cabinet">
+        Open Cabinet, go to **Settings → Providers**, and set **Claude Code** as your default provider.
+      </Step>
+    </Steps>
+
+    <Note>
+      Claude Code is the recommended provider for most Cabinet users. It handles long-context editing tasks well and has no per-token billing when used with a Max subscription.
+    </Note>
+  </Tab>
+  <Tab title="Codex CLI">
+    Codex CLI uses your OpenAI API key and bills per token.
+
+    <Steps>
+      <Step title="Get an OpenAI API key">
+        Create an API key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+      </Step>
+      <Step title="Set your API key">
+        Export the key in your shell environment:
+
+        ```bash
+        export OPENAI_API_KEY=sk-...
+        ```
+
+        Add this to your shell profile (`.zshrc`, `.bashrc`, etc.) to make it permanent.
+      </Step>
+      <Step title="Install the Codex CLI">
+        <Tabs>
+          <Tab title="npm">
+            ```bash
+            npm install -g @openai/codex
+            ```
+          </Tab>
+          <Tab title="Homebrew">
+            ```bash
+            brew install --cask codex
+            ```
+          </Tab>
+        </Tabs>
+      </Step>
+      <Step title="Select Codex CLI in Cabinet">
+        Open Cabinet, go to **Settings → Providers**, and set **Codex CLI** as your default provider.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Selecting your default provider
+
+Cabinet lets you configure which provider is used by default for all agents and jobs. Individual agents can also be assigned to a specific provider if you want to mix providers across your team.
+
+To change the default provider:
+
+1. Open **Settings** in the Cabinet sidebar.
+2. Navigate to **Providers**.
+3. Select your preferred provider from the list.
+4. Save your settings.
+
+If you disable a provider that is currently assigned to one or more agents or jobs, those agents will fall back to the default provider.
+
+## Provider health checks
+
+Cabinet checks whether each configured provider is available when it starts and before running agent tasks. If a provider is not found on your system, Cabinet will display an installation prompt with the steps needed to set it up.
+
+A provider is considered available if its CLI binary is found on your system's `PATH` or in one of the known install locations:
+
+- `~/.local/bin/`
+- `/usr/local/bin/`
+- `/opt/homebrew/bin/`
+
+If Cabinet reports a provider as unavailable, verify that you've completed the installation steps and that the binary is accessible in your shell.
+
+## Adding more providers
+
+Cabinet's provider system is extensible. New providers implement the `AgentProvider` interface, which requires an `id`, a `command` to invoke, and `isAvailable` and `healthCheck` methods. See the source at `src/lib/agents/provider-interface.ts` if you want to add a custom provider.
+
+<Info>
+  Cabinet is designed to work with any AI CLI tool — not just the two providers listed here. The BYOAI philosophy means your knowledge base is never locked to a single AI vendor.
+</Info>

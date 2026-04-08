@@ -1,0 +1,195 @@
+---
+title: "Git API"
+description: "Access version history, view diffs, and restore pages to previous states"
+---
+
+Cabinet auto-commits every page save to a local git repository. The Git API exposes that history so you can browse commits, inspect diffs, and restore any page to any prior state.
+
+---
+
+## Get commit log for a page
+
+```
+GET /api/git/log/[...path]
+```
+
+Returns the commit history for a specific page. The path segments identify the page within the knowledge base.
+
+<ParamField path="path" type="string" required>
+  Path to the page within the knowledge base (e.g. `research` or `go-to-market/strategy`). Matches both directory pages (`path/index.md`) and standalone files (`path.md`).
+</ParamField>
+
+```bash
+# History for a specific page
+curl http://localhost:3000/api/git/log/research
+
+# History for a nested page
+curl http://localhost:3000/api/git/log/go-to-market/strategy
+```
+
+**Response**
+
+Returns an array of commit objects directly (not wrapped in a key).
+
+<ResponseField name="hash" type="string">
+  Full git commit hash
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Commit message. Auto-commits use the format `Update path/to/page.md`
+</ResponseField>
+
+<ResponseField name="author" type="string">
+  Author name. Cabinet uses `Cabinet` for auto-commits.
+</ResponseField>
+
+<ResponseField name="date" type="string">
+  ISO 8601 commit timestamp
+</ResponseField>
+
+```json
+[
+  {
+    "hash": "a1b2c3d4e5f6...",
+    "message": "Update research/index.md",
+    "author": "Cabinet",
+    "date": "2024-03-15T10:30:00+00:00"
+  }
+]
+```
+
+<Note>
+  Returns up to 50 commits per page. Cabinet initializes a git repo in the `data/` directory on first run if one does not already exist.
+</Note>
+
+---
+
+## Get a diff
+
+```
+GET /api/git/diff/[hash]
+```
+
+Returns the unified diff for a specific commit against its parent.
+
+<ParamField path="hash" type="string" required>
+  The git commit hash to diff
+</ParamField>
+
+```bash
+curl http://localhost:3000/api/git/diff/a1b2c3d4e5f6
+```
+
+**Response**
+
+<ResponseField name="diff" type="string">
+  Unified diff output as a string. For the first commit in the repo, shows the full file content as additions.
+</ResponseField>
+
+```json
+{
+  "diff": "diff --git a/research/index.md b/research/index.md\n..."
+}
+```
+
+---
+
+## Create a commit
+
+```
+POST /api/git/commit
+```
+
+Manually creates a git commit for any uncommitted changes in the data directory.
+
+<ParamField body="message" type="string">
+  Commit message. Defaults to `"Manual commit from KB"` if omitted.
+</ParamField>
+
+```bash
+curl -X POST http://localhost:3000/api/git/commit \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Bulk import complete"}'
+```
+
+**Response**
+
+<ResponseField name="ok" type="boolean">
+  `true` if the commit was created
+</ResponseField>
+
+<ResponseField name="committed" type="boolean">
+  `true` if there were changes to commit, `false` if the working tree was already clean
+</ResponseField>
+
+<Note>
+  Cabinet auto-commits on every page save with a 5-second debounce. Use this endpoint after making bulk changes via the API to group them into a single commit.
+</Note>
+
+---
+
+## Get commit status
+
+```
+GET /api/git/commit
+```
+
+Returns the current git working tree status.
+
+```bash
+curl http://localhost:3000/api/git/commit
+```
+
+---
+
+## Restore a file
+
+```
+POST /api/git/restore
+```
+
+Restores a file to its state at a specific commit. This creates a **new commit** with the restored content — it does not rewrite history.
+
+<ParamField body="hash" type="string" required>
+  The commit hash to restore from
+</ParamField>
+
+<ParamField body="pagePath" type="string" required>
+  Virtual path to the page within the knowledge base (e.g. `research` or `go-to-market/strategy`). Cabinet will try both `pagePath/index.md` and `pagePath.md`.
+</ParamField>
+
+```bash
+curl -X POST http://localhost:3000/api/git/restore \
+  -H "Content-Type: application/json" \
+  -d '{"hash": "a1b2c3d4e5f6", "pagePath": "research"}'
+```
+
+**Response**
+
+<ResponseField name="ok" type="boolean">
+  `true` if the file was restored successfully
+</ResponseField>
+
+Returns `404` if the file did not exist at the given commit.
+
+<Warning>
+  Restoring overwrites the current file content and auto-commits the change. The overwritten version is still accessible in git history.
+</Warning>
+
+---
+
+## Pull from remote
+
+```
+POST /api/git/pull
+```
+
+Pulls the latest changes from the remote repository configured for the data directory.
+
+```bash
+curl -X POST http://localhost:3000/api/git/pull
+```
+
+<Note>
+  This endpoint is primarily used with linked repositories (`.repo.yaml`). The main knowledge base does not push or pull automatically.
+</Note>

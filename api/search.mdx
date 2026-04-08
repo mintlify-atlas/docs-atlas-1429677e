@@ -1,0 +1,86 @@
+---
+title: "Search API"
+description: "Full-text search across your knowledge base"
+---
+
+Cabinet indexes all Markdown content and provides a full-text search endpoint. This is the same endpoint used by the `Cmd+K` search dialog in the UI.
+
+---
+
+## Search pages
+
+```
+GET /api/search
+```
+
+Searches all pages in the knowledge base for matching content.
+
+<ParamField query="q" type="string" required>
+  The search query string. Supports fuzzy matching.
+</ParamField>
+
+<ParamField query="tag" type="string">
+  Filter results to pages that include this tag in their frontmatter
+</ParamField>
+
+```bash
+# Search all pages
+curl "http://localhost:3000/api/search?q=market+research"
+
+# Filter by tag
+curl "http://localhost:3000/api/search?q=quarterly+report&tag=finance"
+```
+
+**Response**
+
+<ResponseField name="results" type="SearchResult[]">
+  Array of matching pages, ordered by relevance
+
+  <Expandable title="SearchResult fields">
+    <ResponseField name="path" type="string">
+      Relative path to the page within the knowledge base (e.g. `research/market-analysis`)
+    </ResponseField>
+    <ResponseField name="title" type="string">
+      Page title from frontmatter
+    </ResponseField>
+    <ResponseField name="snippet" type="string">
+      Text excerpt containing the matched content
+    </ResponseField>
+    <ResponseField name="tags" type="string[]">
+      Tags from the page's frontmatter
+    </ResponseField>
+    <ResponseField name="modified" type="string">
+      ISO 8601 timestamp of last modification
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+**Example response**
+
+```json
+{
+  "results": [
+    {
+      "path": "research/market-analysis",
+      "title": "Market Analysis Q1",
+      "snippet": "...the market research shows strong demand for AI-first tools...",
+      "tags": ["research", "market"],
+      "modified": "2024-03-15T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+<Note>
+  Search is performed in-memory by scanning all Markdown files on disk. Hidden files (those starting with `.`) and `CLAUDE.md` are excluded from results.
+</Note>
+
+---
+
+## Search behavior
+
+- **Fuzzy matching** — partial matches and common typos are found
+- **Case-insensitive** — queries are lowercased before matching
+- **Content + title** — both page body and title are searched
+- **Tag filtering** — combine `q` and `tag` to narrow results
+- **Hidden files excluded** — agent memory, config, and system files are not indexed

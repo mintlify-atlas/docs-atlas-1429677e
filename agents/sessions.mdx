@@ -1,0 +1,98 @@
+---
+title: "Agent sessions"
+description: "Browse past agent sessions, view transcripts, and start new ad-hoc runs"
+keywords: ["sessions", "agent sessions", "transcripts", "heartbeat", "Claude Code", "Cabinet"]
+---
+
+A session is a single execution of an agent — one run of Claude Code from start to finish. Every time an agent's heartbeat fires or you trigger a manual run, a new session is created. Sessions are browsable, searchable, and preserved indefinitely.
+
+Think of the sessions view like ChatGPT history: a list of past runs on the left, and the full output transcript on the right.
+
+## The session browser
+
+The session browser lives in the **Sessions** section of any agent's detail view. It has two panels:
+
+- **Left panel** — a scrollable list of past sessions, sorted by most recent. Each entry shows the session status, a one-line summary, the date, and the duration.
+- **Right panel** — the full transcript for the selected session, displayed in a monospace format that mirrors the live terminal output.
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Sessions                                   [+ New]  │
+├──────────────────┬──────────────────────────────────┤
+│ ✓ Reddit Scout   │ > Searching /r/startups for       │
+│ Today, 6:00am    │   posts mentioning "knowledge     │
+│ 4m 12s           │   base"...                        │
+│                  │                                   │
+│ ✓ Weekly report  │ > Found 3 relevant threads.       │
+│ Mon, 9:03am      │   Writing summaries to            │
+│ 8m 55s           │   /go-to-market/reddit/...        │
+│                  │                                   │
+│ ✗ Reddit Scout   │ > Session complete. 3 files       │
+│ Yesterday, 6pm   │   updated, 1 created.             │
+│ timed out        │                                   │
+└──────────────────┴──────────────────────────────────┘
+```
+
+## Session metadata
+
+Each session record stores:
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique session identifier (UUID) |
+| `status` | `running`, `completed`, or `failed` |
+| `trigger` | `heartbeat` (scheduled) or `manual` |
+| `summary` | Auto-generated one-line summary from the agent's output |
+| `startedAt` | ISO timestamp of when the session began |
+| `duration` | Elapsed time in seconds |
+
+Session metadata is stored as JSON files at `/data/.agents/{slug}/sessions/{session-id}.json`.
+
+## Starting a new ad-hoc session
+
+You can run any agent manually at any time — you don't have to wait for its heartbeat schedule.
+
+<Steps>
+  <Step title="Open the Sessions section">
+    Navigate to the agent's detail view and select **Sessions** from the vertical nav.
+  </Step>
+  <Step title="Click the + button">
+    Click **+** in the top-right of the sessions panel. A centered input field appears.
+  </Step>
+  <Step title="Enter your prompt">
+    Type the instructions for this session. The agent uses its persona, memory, and skills as context — you're adding a specific task on top of that.
+  </Step>
+  <Step title="Watch it run">
+    The session starts immediately. The right panel switches to live output. When it completes, it joins the session list.
+  </Step>
+</Steps>
+
+## Heartbeat sessions vs manual sessions
+
+Sessions are created by two different triggers:
+
+**Heartbeat sessions** fire automatically on the agent's cron schedule. The agent reads its memory, checks its inbox, reviews its focus areas, and takes action. These show up in the session list with `trigger: heartbeat`.
+
+**Manual sessions** are started by you (or triggered by a job run-now action). They start with the prompt you provide rather than the standard heartbeat instructions. These show up with `trigger: manual`.
+
+Both types produce the same kind of transcript and are stored identically on disk.
+
+## Session output format
+
+Session output is a raw monospace transcript of the Claude Code execution. It captures everything: tool calls, file reads and writes, intermediate reasoning, and the final summary. The transcript is the same output you'd see in a terminal running `claude -p "..."` directly.
+
+At the end of a successful session, Cabinet parses a structured `cabinet` block from the output to extract the summary and any artifact paths:
+
+````markdown
+```cabinet
+SUMMARY: Scouted Reddit, found 3 relevant threads, wrote summaries.
+CONTEXT: r/startups active this week around AI tooling.
+ARTIFACT: go-to-market/reddit/2026-04-08-weekly.md
+```
+````
+
+The `SUMMARY` line becomes the one-liner shown in the session list. `ARTIFACT` paths link the session to specific KB files that were created or updated.
+
+<Info>
+Sessions are stored indefinitely. If disk space becomes a concern, you can delete old session JSON files from `/data/.agents/{slug}/sessions/` without affecting the agent's configuration or memory.
+</Info>

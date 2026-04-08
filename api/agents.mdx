@@ -1,0 +1,267 @@
+---
+title: "Agents API"
+description: "Manage AI agents, personas, and the agent template library"
+---
+
+The Agents API lets you list, create, update, and run AI agents. Each agent is backed by a `persona.md` file on disk at `/data/.agents/{slug}/`.
+
+---
+
+## List agents
+
+```
+GET /api/agents/personas
+```
+
+Returns all active agents with their current status.
+
+```bash
+curl http://localhost:3000/api/agents/personas
+```
+
+**Response**
+
+<ResponseField name="personas" type="AgentPersona[]">
+  Array of agent persona objects
+
+  <Expandable title="AgentPersona fields">
+    <ResponseField name="slug" type="string">
+      Unique identifier, used in all API paths
+    </ResponseField>
+    <ResponseField name="name" type="string">
+      Display name of the agent
+    </ResponseField>
+    <ResponseField name="role" type="string">
+      Agent's role description
+    </ResponseField>
+    <ResponseField name="emoji" type="string">
+      Emoji icon
+    </ResponseField>
+    <ResponseField name="department" type="string">
+      Department (e.g. `leadership`, `marketing`, `engineering`)
+    </ResponseField>
+    <ResponseField name="type" type="string">
+      `lead` or `specialist`
+    </ResponseField>
+    <ResponseField name="heartbeat" type="string">
+      Cron expression for scheduled runs (e.g. `0 9 * * 1-5`)
+    </ResponseField>
+    <ResponseField name="budget" type="number">
+      Max heartbeat runs per month
+    </ResponseField>
+    <ResponseField name="active" type="boolean">
+      Whether the agent is enabled
+    </ResponseField>
+    <ResponseField name="heartbeatsUsed" type="number">
+      Number of heartbeat runs used this month
+    </ResponseField>
+    <ResponseField name="lastHeartbeat" type="string">
+      ISO 8601 timestamp of last run
+    </ResponseField>
+    <ResponseField name="nextHeartbeat" type="string">
+      ISO 8601 timestamp of next scheduled run
+    </ResponseField>
+    <ResponseField name="runningCount" type="number">
+      Number of currently running conversations for this agent
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="activeHeartbeats" type="string[]">
+  Slugs of agents currently scheduled with an active heartbeat
+</ResponseField>
+
+---
+
+## Create an agent
+
+```
+POST /api/agents/personas
+```
+
+Creates a new agent from scratch.
+
+<ParamField body="slug" type="string" required>
+  Unique identifier for the agent (e.g. `content-marketer`)
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  Display name
+</ParamField>
+
+<ParamField body="role" type="string" required>
+  Role description shown in the agent card
+</ParamField>
+
+<ParamField body="emoji" type="string">
+  Emoji icon (default: `🤖`)
+</ParamField>
+
+<ParamField body="department" type="string">
+  Department name (default: `general`)
+</ParamField>
+
+<ParamField body="type" type="string">
+  `lead` or `specialist` (default: `specialist`)
+</ParamField>
+
+<ParamField body="heartbeat" type="string">
+  Cron expression for scheduled runs (default: `0 8 * * *`)
+</ParamField>
+
+<ParamField body="budget" type="number">
+  Max heartbeat runs per month (default: `100`)
+</ParamField>
+
+<ParamField body="provider" type="string">
+  AI provider ID: `claude-code` or `codex-cli`
+</ParamField>
+
+<ParamField body="body" type="string">
+  Markdown instructions for the agent persona
+</ParamField>
+
+```bash
+curl -X POST http://localhost:3000/api/agents/personas \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slug": "researcher",
+    "name": "Researcher",
+    "role": "Deep-dive research and synthesis",
+    "emoji": "🔬",
+    "department": "operations",
+    "type": "specialist",
+    "heartbeat": "0 8 * * 1",
+    "budget": 50
+  }'
+```
+
+---
+
+## Get agent detail
+
+```
+GET /api/agents/personas/[slug]
+```
+
+Returns full details for a single agent.
+
+<ParamField path="slug" type="string" required>
+  Agent slug
+</ParamField>
+
+---
+
+## Update an agent
+
+```
+PUT /api/agents/personas/[slug]
+```
+
+Updates an agent's persona. Accepts the same fields as POST.
+
+---
+
+## Delete an agent
+
+```
+DELETE /api/agents/personas/[slug]
+```
+
+Permanently deletes the agent and its directory from disk.
+
+<Warning>
+  This removes the agent's `persona.md`, jobs, skills, and session metadata. Memory files under `.memory/` are also deleted.
+</Warning>
+
+---
+
+## List agent library templates
+
+```
+GET /api/agents/library
+```
+
+Returns the 20 pre-built agent templates shipped with Cabinet.
+
+```bash
+curl http://localhost:3000/api/agents/library
+```
+
+**Response**
+
+<ResponseField name="templates" type="AgentTemplate[]">
+  Array of available agent templates, each with `slug`, `name`, `emoji`, `department`, `role`, and `type`
+</ResponseField>
+
+---
+
+## Instantiate from library
+
+```
+POST /api/agents/library/[slug]/add
+```
+
+Copies an agent template into your active agents.
+
+<ParamField path="slug" type="string" required>
+  Template slug (e.g. `ceo`, `content-marketer`, `devops-engineer`)
+</ParamField>
+
+```bash
+curl -X POST http://localhost:3000/api/agents/library/ceo/add
+```
+
+<Note>
+  After adding, the agent's persona is copied to `/data/.agents/{slug}/` and its scheduled heartbeat is registered immediately.
+</Note>
+
+---
+
+## Update an agent / trigger actions
+
+```
+PUT /api/agents/personas/[slug]
+```
+
+Updates an agent's persona fields, or triggers special actions via the `action` field.
+
+<ParamField path="slug" type="string" required>
+  Agent slug
+</ParamField>
+
+### Update persona fields
+
+Pass any persona fields to update them:
+
+```bash
+curl -X PUT http://localhost:3000/api/agents/personas/researcher \
+  -H "Content-Type: application/json" \
+  -d '{"heartbeat": "0 9 * * 1-5", "budget": 80}'
+```
+
+### Toggle active state
+
+```bash
+curl -X PUT http://localhost:3000/api/agents/personas/researcher \
+  -H "Content-Type: application/json" \
+  -d '{"action": "toggle"}'
+```
+
+Returns `{ ok: true, active: boolean }`.
+
+### Run an agent manually
+
+Triggers an immediate heartbeat run outside the cron schedule:
+
+```bash
+curl -X PUT http://localhost:3000/api/agents/personas/researcher \
+  -H "Content-Type: application/json" \
+  -d '{"action": "run"}'
+```
+
+Returns `{ ok: true, sessionId: string }` on success, or `{ ok: false, message: "Agent inactive or over budget" }` if the agent cannot be run.
+
+<Note>
+  Manual runs count against the agent's monthly `budget`. If `heartbeatsUsed` equals `budget`, the agent will not run until the budget resets.
+</Note>

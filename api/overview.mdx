@@ -1,0 +1,120 @@
+---
+title: "API overview"
+description: "Cabinet exposes a REST API for managing pages, agents, jobs, and git history"
+keywords: ["API", "REST", "endpoints", "Cabinet", "authentication"]
+---
+
+Cabinet's REST API gives you programmatic access to everything in your knowledge base — pages, agents, jobs, version history, and search. The same routes that power the Cabinet UI are available for automation, scripts, and external integrations.
+
+## Base URL
+
+```
+http://localhost:3000/api
+```
+
+All requests and responses use JSON unless otherwise noted. File upload endpoints accept `multipart/form-data`.
+
+## Authentication
+
+Cabinet uses session-based authentication. Authentication is only active when you set the `KB_PASSWORD` environment variable. If `KB_PASSWORD` is not set, the API is open with no auth required.
+
+**When `KB_PASSWORD` is set:**
+
+<Steps>
+  <Step title="Obtain a session cookie">
+    POST your password to `/api/auth/login`. On success, Cabinet sets an `httpOnly` cookie named `kb-auth` that is valid for 30 days.
+
+    ```bash
+    curl -X POST http://localhost:3000/api/auth/login \
+      -H "Content-Type: application/json" \
+      -d '{"password": "your-password"}' \
+      -c cookies.txt
+    ```
+  </Step>
+  <Step title="Include the cookie on subsequent requests">
+    Pass the cookie jar on every request. Most HTTP clients handle this automatically once you store the cookie.
+
+    ```bash
+    curl http://localhost:3000/api/tree \
+      -b cookies.txt
+    ```
+  </Step>
+</Steps>
+
+<Note>
+Cabinet does not have an API key system. All authentication is cookie-based. When `KB_PASSWORD` is unset, every request is permitted without credentials.
+</Note>
+
+## Available resources
+
+<CardGroup cols={2}>
+  <Card title="Pages" icon="file-lines" href="/api/pages">
+    Create, read, update, delete, and move knowledge base pages. Covers the tree endpoint and file uploads.
+  </Card>
+  <Card title="Agents" icon="robot" href="/api/agents">
+    Manage AI agent personas, trigger manual runs, toggle active state, and browse the agent library.
+  </Card>
+  <Card title="Jobs" icon="clock" href="/api/jobs">
+    Create and manage scheduled jobs that run agent prompts on a cron schedule.
+  </Card>
+  <Card title="Git" icon="code-branch" href="/api/git">
+    Browse version history, view diffs, commit changes manually, and restore pages to previous versions.
+  </Card>
+  <Card title="Search" icon="magnifying-glass" href="/api/search">
+    Full-text search across all knowledge base pages by query string or tag.
+  </Card>
+</CardGroup>
+
+### All top-level routes
+
+| Route | Description |
+|-------|-------------|
+| `GET /api/tree` | Full knowledge base file tree |
+| `GET /api/pages/[...path]` | Get page content and metadata |
+| `PUT /api/pages/[...path]` | Update page content |
+| `POST /api/pages/[...path]` | Create a new page |
+| `DELETE /api/pages/[...path]` | Delete a page |
+| `PATCH /api/pages/[...path]` | Rename or move a page |
+| `POST /api/upload/[...path]` | Upload a file to a page directory |
+| `GET /api/agents/personas` | List all agent personas |
+| `POST /api/agents/personas` | Create an agent |
+| `GET /api/agents/personas/[slug]` | Get agent detail with memory and history |
+| `PUT /api/agents/personas/[slug]` | Update, run, or toggle an agent |
+| `DELETE /api/agents/personas/[slug]` | Delete an agent |
+| `GET /api/agents/library` | List agent library templates |
+| `POST /api/agents/library/[slug]/add` | Instantiate an agent from a library template |
+| `GET /api/agents/[id]/jobs` | List jobs for an agent |
+| `POST /api/agents/[id]/jobs` | Create a job for an agent |
+| `GET /api/agents/[id]/jobs/[jobId]` | Get a single job |
+| `PUT /api/agents/[id]/jobs/[jobId]` | Update, toggle, or manually run a job |
+| `DELETE /api/agents/[id]/jobs/[jobId]` | Delete a job |
+| `GET /api/git/log/[...path]` | Git history for a page |
+| `GET /api/git/diff/[hash]` | Diff for a specific commit |
+| `GET /api/git/commit` | Get working tree status |
+| `POST /api/git/commit` | Manually commit pending changes |
+| `POST /api/git/restore` | Restore a page to a previous commit |
+| `POST /api/git/pull` | Pull from remote repository |
+| `GET /api/search` | Full-text search |
+| `POST /api/ai/edit` | Trigger an AI edit on a page |
+
+## Common error responses
+
+All error responses return JSON with an `error` field.
+
+```json
+{
+  "error": "Page not found"
+}
+```
+
+| Status | When it occurs |
+|--------|---------------|
+| `400` | Missing required fields in the request body |
+| `401` | Authentication is enabled and the request has no valid session cookie |
+| `404` | The requested page, agent, or job does not exist |
+| `409` | A page already exists at the given path (on create) |
+| `500` | An unexpected server error occurred |
+
+## Rate limits
+
+Cabinet is self-hosted and has no rate limits. You are responsible for managing traffic to your own instance.

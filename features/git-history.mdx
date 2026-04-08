@@ -1,0 +1,99 @@
+---
+title: "Version History"
+description: "Every save auto-commits to git — view diffs, browse history, and restore any page to any point in time"
+---
+
+Every change you make in Cabinet is automatically committed to a local git repository inside the `data/` directory. This gives your knowledge base the same auditability as a codebase: you can see exactly what changed, when, and restore any page to any earlier state.
+
+## How auto-commit works
+
+When you save a page, Cabinet's git service stages all changes in `data/` and commits them with a message like `Update product/roadmap` or `Add research/competitors`. Commits are debounced — rapid saves within a 5-second window are batched into a single commit so your history stays readable.
+
+The git repository is initialized automatically the first time you run Cabinet. Commits are attributed to `Cabinet <kb@cabinet.dev>`.
+
+```
+data/
+  .git/              ← local git repo (auto-initialized)
+  product/
+    index.md
+  research/
+    index.md
+```
+
+<Info>
+  You never need to run `git commit` yourself. Cabinet handles this entirely. You can still run standard git commands against `data/` from the terminal if you need to inspect or manipulate history directly.
+</Info>
+
+## Viewing history
+
+Open any page and click the **clock icon** in the editor toolbar to open the Version History panel. Cabinet fetches the git log for that page's file (checking up to 50 commits) and displays each commit with:
+
+- The commit hash (short)
+- The author name
+- The date and time
+- The commit message
+
+History is scoped to the current page — you see only the commits that touched that specific file, not every commit in the repository.
+
+## Diff viewer
+
+Click any commit in the history list to open the diff viewer. Cabinet runs `git diff <hash>~1 <hash>` and displays the result inline. Added lines are highlighted in green, removed lines in red, so you can see exactly what changed in that save.
+
+For the very first commit of a file, Cabinet falls back to `git diff <hash>` to show the initial content.
+
+<Tip>
+  The diff viewer is especially useful for reviewing AI edits. After the AI panel makes a change, open Version History to see a precise line-by-line diff of what Claude modified.
+</Tip>
+
+## Restoring a previous version
+
+<Steps>
+  <Step title="Open Version History">
+    Click the **clock icon** in the editor toolbar while viewing the page you want to restore.
+  </Step>
+  <Step title="Select a commit">
+    Browse the list and click the commit you want to restore to. The diff viewer shows you the state of the file at that point.
+  </Step>
+  <Step title="Click Restore">
+    Click the **Restore** button. Cabinet runs `git checkout <hash> -- <file>` to restore the file to that exact state, then immediately creates a new commit — for example, `Restore product/roadmap to version a3f2c1b8` — so the restoration itself is also tracked in history.
+  </Step>
+  <Step title="Review the restored content">
+    The editor reloads with the restored content. If the restoration is not what you wanted, you can open Version History again and restore to a different commit.
+  </Step>
+</Steps>
+
+<Warning>
+  Restoring a page does not delete any history. Because Cabinet commits the restoration as a new commit, you can always get back to the version you restored from by opening history and selecting it again.
+</Warning>
+
+## Why git-backed memory matters for AI
+
+Cabinet's git integration is not just a convenience feature — it is a design requirement for AI systems.
+
+When agents read, write, and update your knowledge base continuously, mistakes happen. An agent might overwrite content, produce a hallucinated summary, or misinterpret an instruction. Without an audit trail, these errors are silent and permanent.
+
+With git-backed storage, every agent action is:
+
+- **Auditable** — you can see exactly what an agent wrote and when
+- **Reversible** — a single restore undoes any agent edit without side effects
+- **Inspectable** — diffs show you whether an agent added, changed, or removed content
+
+This is the same reason software teams use git for code. Your knowledge base is infrastructure. It deserves the same treatment.
+
+## Linked repositories
+
+In addition to the knowledge base's own git history, Cabinet supports linking individual KB directories to external Git repositories via a `.repo.yaml` file. This is separate from version history — it connects a KB section to the source code of a related project so agents can read and search that codebase in context.
+
+See the [Knowledge Base](/features/knowledge-base#linked-repositories) page for the full `.repo.yaml` spec.
+
+## Manual commits
+
+If you want to commit with a specific message — for example, after a major restructure — you can trigger a manual commit from the terminal using the Cabinet daemon's commit endpoint, or by running `git commit` directly inside `data/`:
+
+```bash
+cd data
+git add .
+git commit -m "Restructure product section after Q2 planning"
+```
+
+Manual commits appear in the Version History panel alongside auto-commits.
